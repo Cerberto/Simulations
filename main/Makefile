@@ -25,21 +25,22 @@ GLOBAL = constants
 
 ODE = numerov
 
-SIMULATIONS = metropolis
+SIMULATIONS = metropolis  ljmod
 
 CLUSTER = jackknife
 
 COSEACASO = funzioni procedure_ex
 
 
-MODULES =  # $(GLOBAL) $(EXTRAS) $(ODE) $(SIMULATIONS) $(CLUSTER) $(COSEACASO)
+MODULES =   $(GLOBAL) $(CLUSTER)
+# $(EXTRAS) $(ODE) $(SIMULATIONS) $(COSEACASO)
 
 
 # search path for modules
 
 MDIR = ../modules
 
-VPATH = $(MDIR)/ode:$(MDIR)/global:$(MDIR)/coseacaso:$(MDIR)/extras
+VPATH = $(MDIR)/global:$(MDIR)/cluster
 
 
 # additional include directories
