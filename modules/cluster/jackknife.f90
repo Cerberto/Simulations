@@ -23,7 +23,7 @@ module jackknife
 
     ! definition of the jackknife cluster
     type :: JK
-        real, pointer, dimension(:) :: vec  ! sample vector
+        real, dimension(:), allocatable :: vec  ! sample vector
         integer :: D                        ! dimension of the sample
         real :: mean, var                   ! mean and variance of the mean
     end type JK
@@ -38,9 +38,10 @@ module jackknife
     ! interface for a JK cluster function
     abstract interface
         function jkf (f, X)
-            type(JK) :: jkf
-            type(JK), pointer :: X
+            type(JK) :: jkf, X
             procedure(func), pointer :: f
+            real :: temp
+            integer :: i
         end function jkf
     end interface    
     
@@ -50,34 +51,30 @@ contains
     subroutine JK_cluster (C)
         implicit none
         
-        type(JK), pointer :: C
+        type(JK) :: C
         integer :: i
         integer :: D = C%D
         
         C%mean = 0
-        do i=0 i<D
+        do i=0, D-1, 1
             C%mean = C%mean + (C%vec(i))/(real(D))
-            i=i+1
         end do
 	
-        do i=0 i<D
+        do i=0, D-1, 1
             C%vec(i) = C%mean + (C%mean - C%vec(i))/(real(D - 1))
-            i=i+1
         end do
 	
         C%sigma = 0;
-        do i=0 i<D
+        do i=0, D-1, 1
             C%sigma = C%sigma + (C%vec(i) - C%mean)*(C%vec(i) - C%mean)
-            i=i+1
         end do
             C%sigma = C%sigma * (real(D - 1))/(real(D))
-    
     end subroutine JK_cluster
 
 
     subroutine JK_init (C, D)
         implicit none
-        type(JK), pointer :: C
+        type(JK) :: C
         integer :: D
         
         C%D = D
@@ -91,25 +88,22 @@ contains
         implicit none
         
         ! definition of arguments and result
-        type(JK), pointer :: X
-        type(JK) :: res
+        type(JK) :: X, res
         real, external, pointer :: f
         ! ausiliary variables
         integer :: i
         real :: temp = 0
-        type(JK), pointer :: pt_res
         
         ! initialization of the cluster for the result
-        pt_res => res
-        call cluster_init(pt_res,D);
+        call cluster_init(res,D);
         
         ! assignments
         res%mean = f(X%mean);
-        do i=0, i<D
+        do i=0, D-1, 1
             res%vec(i) = f(X%vec(i));
             temp = temp + (res%vec(i) - res%mean)*(res%vec(i) - res%mean);
-            temp = temp * (real(D - 1)/real(D));
         end do
+        temp = temp * (real(D - 1)/real(D));
         res%sigma = temp
         
     end function JK_function

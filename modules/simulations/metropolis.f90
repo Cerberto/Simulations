@@ -12,19 +12,19 @@ module metropolis
         function ac (x,t)
             real :: ac
             integer :: i, D, t
-            real, dimension(:), pointer :: x
+            real, dimension(:), allocatable :: x
         end function ac
         
         function weight (x)
             real :: weight
-            real, dimension(:), pointer :: x
+            real, dimension(:), allocatable :: x
         end function weight
     end interface
     
     abstract interface
         subroutine metr (f, x, delta)
             procedure(weight), external, pointer :: P
-            real, dimension(:), pointer :: state
+            real, dimension(:), allocatable :: state
             real :: delta, swap, x_new, acceptance
             integer :: i, D
             real, dimension(2) :: u

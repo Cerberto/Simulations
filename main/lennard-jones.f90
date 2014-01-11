@@ -49,7 +49,7 @@ end module LJ_global
 
 program LJ
 
-    ! use jackknife, only: JK, JK_init, JK_cluster, JK_function
+    use jackknife, only: JK, JK_init, JK_cluster, JK_function
     use LJ_global, only: particle, particle_init, L, N
     implicit none
     
