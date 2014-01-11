@@ -15,8 +15,7 @@ all: rmxeq cmpsc mkxeq rmpmk
 
 # main programs
 
-MAIN = test_size
-# lennard-jones
+MAIN =  lennard-jones  #  test_vettori
 
 # required modules
 
