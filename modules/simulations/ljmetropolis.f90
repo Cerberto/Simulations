@@ -2,7 +2,8 @@
 
 module metropolis
 
-    use jackknife, only: JK, JK_cluster, JK_init, JK_function
+    use kinds, only: dp
+    use jackknife, only: JK, JK_cluster, JK_init !, JK_function
     implicit none
 
     private none
@@ -10,55 +11,55 @@ module metropolis
     
     interface
         function ac (x,t)
-            real :: ac
+            real(dp) :: ac
             integer :: i, D, t
-            real, dimension(:), allocatable :: x
+            real(dp), dimension(:), allocatable :: x
         end function ac
         
         function weight (x)
-            real :: weight
-            real, dimension(:), allocatable :: x
+            real(dp) :: weight
+            real(dp), dimension(:), allocatable :: x
         end function weight
     end interface
     
     abstract interface
         subroutine metr (f, x, delta)
             procedure(weight), external, pointer :: P
-            real, dimension(:), allocatable :: state
-            real :: delta, swap, x_new, acceptance
+            real(dp), dimension(:), allocatable :: state
+            real(dp) :: delta, swap, x_new, acceptance
             integer :: i, D
-            real, dimension(2) :: u
+            real(dp), dimension(2) :: u
         end subroutine metr
     end interface
 
 contains
 
     function autocorrelation (x, t)
-        real :: autocorrelation
+        real(dp) :: autocorrelation
         integer :: t
-        real, dimension(:), pointer :: x
+        real(dp), dimension(:), pointer :: x
         
         integer :: D = size(x)
         integer :: i
-        real, dimension(3) :: temp = (/ 0, 0, 0 /)
+        real(dp), dimension(3) :: temp = (/ 0, 0, 0 /)
         
         do i=0, i<D-t
-            temp(3) = temp(3) + x(i)*x(i+t)/real(D - t)
-            temp(1) = temp(1) + x(i)/real(D - t)
-            temp(2) = temp(2) + x(i)*x(i)/real(D - t)
+            temp(3) = temp(3) + x(i)*x(i+t)/real(dp)(D - t)
+            temp(1) = temp(1) + x(i)/real(dp)(D - t)
+            temp(2) = temp(2) + x(i)*x(i)/real(dp)(D - t)
         end do
     end function autocorrelation
 
     ! Most general metropolis algorithm
     subroutine metr_gen (P,state,delta)
         procedure(weight), external, pointer :: P
-        real, dimension(:), pointer :: state
-        real :: delta
+        real(dp), dimension(:), pointer :: state
+        real(dp) :: delta
         
         ! ausiliary variables
         integer :: i, D
-        real :: swap, x_new, acceptance
-        real, dimension(2) :: u
+        real(dp) :: swap, x_new, acceptance
+        real(dp), dimension(2) :: u
         
         D = size(state)
         do i=0, D, 1
@@ -81,13 +82,13 @@ contains
     ! probability densities proportional to exp{F}=exp{beta*f}
     subroutine metr_th (F,state,delta)
         procedure(weight), external, pointer :: F
-        real, dimension(:), pointer :: state
-        real :: delta
+        real(dp), dimension(:), pointer :: state
+        real(dp) :: delta
         
         ! ausiliary variables
         integer :: i, D
-        real :: swap, x_new, acceptance
-        real, dimension(2) :: u
+        real(dp) :: swap, x_new, acceptance
+        real(dp), dimension(2) :: u
         
         D = size(state)
         do i=0, D, 1

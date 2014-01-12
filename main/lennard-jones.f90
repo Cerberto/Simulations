@@ -1,5 +1,6 @@
 program LJ
-
+    
+    use kinds, only: dp
     use jackknife, only: JK, JK_init, JK_cluster ! , JK_function
     use ljmod, only: particle, L, N, eps, sigma
     implicit none

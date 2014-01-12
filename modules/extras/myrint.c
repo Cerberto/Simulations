@@ -1,10 +1,5 @@
 #include <tgmath.h>
 
-void myrint_ (float * val, float * rval) {
+void frint_ (double * val, double * rval) {
   *rval = rint(*val);
-}
-
-
-double frint_ (double x) {
-    return rint(x);
 }

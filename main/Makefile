@@ -18,7 +18,7 @@ SHELL=/bin/bash
 
 ###############################  main programs  ################################
 
-MAIN =  test_random # lennard-jones
+MAIN =  test_rint # lennard-jones
 	#  test_vettori
 
 
@@ -26,7 +26,7 @@ MAIN =  test_random # lennard-jones
 
 EXTRAS = zeros
 
-GLOBAL = constants
+GLOBAL = kind  constants
 
 ODE = numerov
 
@@ -38,7 +38,7 @@ CLUSTER = jackknife
 COSEACASO = funzioni procedure_ex
 
 
-# MODULES =   $(GLOBAL) $(CLUSTER) $(SIMULATIONS)
+MODULES =   $(GLOBAL) $(CLUSTER) # $(SIMULATIONS)
 	# $(EXTRAS) $(ODE) $(COSEACASO)
 	
 	
