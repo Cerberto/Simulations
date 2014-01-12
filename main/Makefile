@@ -1,6 +1,7 @@
 ################################################################################
 #
-#   Makefile to compile and link Fortran programs
+#   Makefile to compile and link Fortran programs. (Hopefully) written for 
+#	merging C routines.
 #
 #  "make" compiles and links the specified main programs and modules
 #  using the specified libraries (if any), and produces the executables;
@@ -10,15 +11,18 @@
 #
 ################################################################################
 
-all: rmxeq cmpsc mkxeq rmpmk
+all: rmxeq cmpcf cmpsc mkxeq rmpmk 
 .PHONY: all
 
-# main programs
+SHELL=/bin/bash
 
-MAIN =  lennard-jones
+###############################  main programs  ################################
+
+MAIN =  test_random # lennard-jones
 	#  test_vettori
 
-# required modules
+
+###################  requided modules and external routines  ###################
 
 EXTRAS = zeros
 
@@ -34,61 +38,92 @@ CLUSTER = jackknife
 COSEACASO = funzioni procedure_ex
 
 
-MODULES =   $(GLOBAL) $(CLUSTER) $(SIMULATIONS)
+# MODULES =   $(GLOBAL) $(CLUSTER) $(SIMULATIONS)
 	# $(EXTRAS) $(ODE) $(COSEACASO)
+	
+	
+######################  additional files for C routines  #######################
 
+CFILES = ranlxs  ranlxd  gauss  randomf  start  utils  myrint
+
+
+##############################  set search paths  ##############################
 
 # search path for modules
-
 MDIR = ../modules
-
-VPATH = $(MDIR)/global:$(MDIR)/cluster:$(MDIR)/simulations
-
+VPATH = $(MDIR)/global:$(MDIR)/cluster:$(MDIR)/simulations:$(MDIR)/start:\
+	$(MDIR)/random:$(MDIR)/extras
 
 # additional include directories
-
-INCPATH = ../include  /usr/include
-
+INCPATH = /usr/include
 
 # additional libraries to be included 
-
-LIBS = lapack  blas
-
 LIBPATH = /usr/local/lib
 
 
-# Optimization and debugging flags for Fortran compiler
+###############################  for C programs  ###############################
+
+CINCLUDE = ../include  /usr/include
+
+CC = gcc
+
+CFLAGS = -Wall -O -std=gnu99 -g -DSSE2
+
+CLIBS = m
+
+CINCDIRS = $(addprefix -I,$(CINCLUDE))
+
+CLDFLAGS = $(addprefix -L,$(LIBPATH)) $(addprefix -l,$(CLIBS))
+
+-include $(addsuffix .d,$(CFILES))
+
+
+# rule to make dependencies
+$(addsuffix .d,$(CFILES)): %.d: %.c Makefile
+	@ $(CC) -MM -ansi $(CINCDIRS) $< -o $@
+
+
+# rule to compile source programs
+$(addsuffix .o,$(CFILES)): %.o: %.c Makefile
+	@ $(CC) $< -c $(CFLAGS) $(CINCDIRS) -o $@
+
+
+############################  for Fortran programs  ############################
+
+FC = gfortran
 
 FCFLAGS = -Wall -Wextra -C -g3 -fbacktrace -O2 -fbounds-check
 
-SHELL=/bin/bash
-
-FC = gfortran
+LIBS = lapack  blas
 
 PROGRAMS = $(MODULES) $(MAIN)
 
 INCDIRS = $(addprefix -I,$(INCPATH))
 
-OBJECTS = $(addsuffix .o,$(MODULES))
+OBJECTS = $(addsuffix .o,$(MODULES)) $(addsuffix .o,$(CFILES))
 
 LDFLAGS = $(addprefix -L,$(LIBPATH)) $(addprefix -l,$(LIBS))
 
 
-############################ definition of rules ###############################
-
 # compile source programs
-
 $(addsuffix .o,$(PROGRAMS)): %.o: %.f90 Makefile
 	@ $(FC) $(LDFLAGS) $(FCFLAGS) $(INCDIRS) -c $<
 
-
 # link object files and produce executables
-
 $(MAIN): %: %.o $(OBJECTS)
 	@ $(FC) $(FCFLAGS) $(LDFLAGS) -o $@ $^
 
 
+############################  List of instructions  ############################
+
+# remove old executables and old error log file
+rmxeq:
+	@ -rm -f $(MAIN); \
+        echo "  delete old executables"
+
+
 # produce executables
+cmpcf: $(addsuffix .o,$(CFILES))
 
 cmpsc: $(addsuffix .o,$(PROGRAMS))
 
@@ -96,19 +131,10 @@ mkxeq: $(MAIN)
 	@ echo "  linking object files and producing executables"
 
 
-# remove old executables and old error log file
-
-rmxeq:
-	@ -rm -f $(MAIN); \
-        echo "  delete old executables"
-
-
 # clean directory
-
 rmpmk:
 	@ -rm -rf *.o .tmp; \
-		echo "  delete object and temporary files"
-
+		echo -e "  delete object and temporary files\n\n\t\tSTAY BOMBER!\n"
 
 .PHONY: clean
 
