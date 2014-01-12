@@ -1,11 +1,12 @@
 module ljmod
     implicit none
+    public
     
     type :: particle
         real :: x, y, z
     end type particle
     
-    real :: L           ! cube side
+    real :: side        ! cube side
     integer :: N        ! number of particles
     real, parameter :: sigma = 1.0      ! length scale
     real, parameter :: eps = 1.0        ! energy scale
@@ -13,8 +14,10 @@ module ljmod
 end module ljmod
 
 
-subroutine particle_init (ptcls, side)
-    real :: side    ! cube side
+subroutine particle_init (ptcls)
+    use ljmod, only: side, N, particle
+    implicit none
+    
     type(particle), dimension(:) :: ptcls  ! set of particles
     real :: lspc    ! lattice spacing
     integer :: i,j,k
@@ -23,7 +26,7 @@ subroutine particle_init (ptcls, side)
     real :: x,y,z
     
     ! ATTENTION : may particles go outside the box? check with numbers
-    temp = size(ptcls)**(1/3.0)
+    temp = N**(1/3.0)
     lspc = side/(temp+2)
     npsd = int(temp)+1
     
@@ -48,7 +51,9 @@ end subroutine particle_init
 
 
 function distance (ptcls, i, j)
+    use ljmod, only: particle
     implicit none
+    
     type(particle), dimension(:) :: ptcls
     real :: distance
     integer :: i,j
@@ -58,27 +63,28 @@ function distance (ptcls, i, j)
 end function distance
 
 
-function lj_potential (r) result(V)
-    implicit none
+function lj_potential (r)
     use ljmod, only: sigma, eps
+    implicit none
     
-    real :: V, r
-    V = 4*eps*((sigma/r)**12 - (sigma/r)**6)
+    real :: lj_potential, r
+    lj_potential = 4.0*eps*((sigma/r)**12 - (sigma/r)**6)
 end function lj_potential
 
 
-function potential_tot (ptcls) result(V)
+function interaction (ptcls)
+    use ljmod, only: particle, N
     implicit none
     
-    real :: V
+    real :: interaction, temp
     type(particle), dimension(:) :: ptcls
-    integer :: i,j,npar
+    integer :: i,j
     
-    npar = size(ptcls)
-    V = 0
-    do i=1, npar-1, 1
+    interaction = 0
+    do i=1, N-1, 1
         do j=0, i-1, 1
-            V = V + lj_potential(distance(ptcls,i,j))
+            temp = distance(ptcls,i,j)
+            interaction = interaction + lj_potential(temp)
         end do
     end do
 

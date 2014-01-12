@@ -1,7 +1,7 @@
 program LJ
 
     use jackknife, only: JK, JK_init, JK_cluster ! , JK_function
-    use LJ_global, only: particle, particle_init, L, N
+    use ljmod, only: particle, L, N, eps, sigma
     implicit none
     
     type(particle), dimension(:), allocatable :: ptcls

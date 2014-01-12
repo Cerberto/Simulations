@@ -15,7 +15,8 @@ all: rmxeq cmpsc mkxeq rmpmk
 
 # main programs
 
-MAIN =  lennard-jones  #  test_vettori
+MAIN =  lennard-jones
+	#  test_vettori
 
 # required modules
 
@@ -25,22 +26,23 @@ GLOBAL = constants
 
 ODE = numerov
 
-SIMULATIONS = metropolis  ljmod
+SIMULATIONS = ljmod
+	# metropolis
 
 CLUSTER = jackknife
 
 COSEACASO = funzioni procedure_ex
 
 
-MODULES =   $(GLOBAL) $(CLUSTER)
-# $(EXTRAS) $(ODE) $(SIMULATIONS) $(COSEACASO)
+MODULES =   $(GLOBAL) $(CLUSTER) $(SIMULATIONS)
+	# $(EXTRAS) $(ODE) $(COSEACASO)
 
 
 # search path for modules
 
 MDIR = ../modules
 
-VPATH = $(MDIR)/global:$(MDIR)/cluster
+VPATH = $(MDIR)/global:$(MDIR)/cluster:$(MDIR)/simulations
 
 
 # additional include directories

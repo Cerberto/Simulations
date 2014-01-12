@@ -17,7 +17,6 @@
 
 module jackknife
     implicit none
-    
     public
 
     ! definition of the jackknife cluster
