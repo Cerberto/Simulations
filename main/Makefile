@@ -18,7 +18,7 @@ SHELL=/bin/bash
 
 ###############################  main programs  ################################
 
-MAIN =  test_rint # lennard-jones
+MAIN =  test # lennard-jones
 	#  test_vettori
 
 
@@ -44,7 +44,7 @@ MODULES =   $(GLOBAL) $(CLUSTER) # $(SIMULATIONS)
 	
 ######################  additional files for C routines  #######################
 
-CFILES = ranlxs  ranlxd  gauss  randomf  start  utils  myrint
+CFILES = ranlxs  ranlxd  gauss  ranlux_fort  start  utils  myrint
 
 
 ##############################  set search paths  ##############################

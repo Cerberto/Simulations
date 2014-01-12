@@ -1,10 +1,10 @@
 /*
  *      Routine tu be used in Fortran to generate random numbers with the
- *      Martin Luscher algorithm
+ *      Martin Luescher algorithm
  **/
 
 #include "random.h"
 
-void randf_ (double x[], int n) {
+void frand_ (double x[], int n) {
     ranlxd(x,n);
 }
