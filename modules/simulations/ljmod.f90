@@ -1,3 +1,7 @@
+!
+!   Module containing global types and variables for the Lennard-Jones
+!   Metropolis calculations
+!
 module ljmod
     use kinds, only: dp
     implicit none
@@ -13,6 +17,7 @@ module ljmod
     real(dp), parameter :: sigma = 1.0
     real(dp), parameter :: eps = 1.0
     real(dp) :: delta, potential
+    real(dp), dimension(3) :: pstn_new
 
 !    interface
 !        function func (x, a, b)
@@ -25,24 +30,30 @@ module ljmod
 end module ljmod
 
 
-function distance (ptcls, i, j)
+!   
+!   Distance between two points in 3D specified by vec1 and vec2
+!
+function distance (vec1, vec2)
     use kinds, only: dp
     use ljmod, only: particle 
-    type(particle), dimension(:) :: ptcls
+    real(dp), dimension(3) :: vec1, vec2
     real(dp) :: distance
-    integer :: i,j,k
+    integer :: k
     
     distance = 0
     do k=1, 3, 1
-        distance = distance + (ptcls(i)%pstn(k) - ptcls(j)%pstn(k))**2
+        distance = distance + (vec1(k) - vec2(k))**2
     end do
 
 end function distance
     
 
+!
+!   Initialization of the particles on a cubic lattice inside a cubic box
+!
 subroutine particle_init (ptcls)
     use kinds, only: dp
-    use ljmod, only: side, N, particle
+    use ljmod, only: side, N, particle, potential
     implicit none
     
     type(particle), dimension(:) :: ptcls  ! set of particles
@@ -77,6 +88,9 @@ subroutine particle_init (ptcls)
 end subroutine particle_init
 
 
+!
+!   Pair potential (Lennard-Jones type)
+!
 function lj_potential (r)
     use kinds, only: dp
     use ljmod, only: sigma, eps
@@ -88,6 +102,9 @@ function lj_potential (r)
 end function lj_potential
 
 
+!
+!   Total interaction energy
+!
 function interaction (ptcls)
     use kinds, only: dp
     use ljmod, only: particle, N !, distance
@@ -100,78 +117,70 @@ function interaction (ptcls)
     interaction = 0
     do i=1, N-1, 1
         do j=0, i-1, 1
-            temp = distance(ptcls,i,j)
+            temp = distance(ptcls(i)%pstn, ptcls(j)%pstn)
             interaction = interaction + lj_potential(temp)
         end do
     end do
 
 end function interaction
 
+
+!
+!   Interaction energy difference when displacing the k-th particle
+!
 function delta_interaction (ptcls, k) result(diff)
     use kinds, only: dp
     use ljmod, only: particle, N
     
-    real(dp) :: diff
+    real(dp) :: diff = 0
+    real(dp) :: t1, t2
     type(particle), dimension(:) :: ptcls
-    integer :: k
+    integer :: k, i
     
+    t2 = 0
+    do i=0, N, 1
+        if (i /= k) then
+            t1 = distance(ptcls(i)%pstn, ptcls(k)%pstn)
+            t1 = lj_potential(t1)
+            t2 = distance(ptcls(i)%pstn, pstn_new)
+            t2 = lj_potential(t2)
+            
+            diff = diff - t1 + t2
+        end if
+    end do
 
 end function delta_interaction
 
-function thmetropolis (ptcls, k)
+
+!
+!   Routine implementing the Metropolis algorithm for a thermal distribution.
+!
+subroutine thmetropolis (ptcls, k)
     use kinds, only: dp
-    use ljmod, only: particle, delta
+    use ljmod, only: particle, delta, pstn_new, potential
     implicit none
     
-    real(dp) :: thmetropolis = 0
     type(particle), dimension(:) :: ptcls
     integer :: i,k
-    real(dp), dimension(:), allocatable :: displ, temp
+    real(dp), dimension(:), allocatable :: u
     real(dp) :: t1, t2
     
     allocate(u(4))
-    allocate(temp(3))
     call ranlxdf(u,4)
     
     do i=1, 3, 1
-        temp(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
-        temp(i) = temp(i) - side*rintf(temp(i)/side)
+        pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
+        pstn_new(i) = pstn_new(i) - side*rintf(pstn_new(i)/side)
     end do
     
     t1 = delta_interaction(ptcls,k)
     t2 = exp(-t1)
         
     if(t2 >= u(4)) then
-        ptcls(k)%pstn = temp        ! SI PUÒ FARE?!
+        ptcls(k)%pstn = pstn_new        ! SI PUÒ FARE?!
         potential = potential + t1
     end if
     
     deallocate(u)
-    deallocate(temp)
 
-end function thmetropolis
-
-
-double HOmetropolis (double* state, int state_dim)
-{
-	int i;
-	double u[2];
-	double x_new, temp1, temp2;
-	double DS = 0;
-	
-	for(i=0; i<state_dim; i++)
-	{
-		ranlxd(u,2);
-		x_new = state[i] + DELTA*(2*u[1] - 1);
-		temp1 = deltaS(state,state_dim,x_new,i);
-		temp2 = exp(-temp1);
-
-		/* scelta nuova configurazione */
-		if(temp2 >= u[0])
-		{
-			state[i] = x_new;
-			DS += temp1;
-		}
-	}
-	return DS;
-}
+end subroutine thmetropolis
