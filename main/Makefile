@@ -30,21 +30,22 @@ GLOBAL = kind  constants
 
 ODE = numerov
 
-SIMULATIONS = ljmod
+SIMULATIONS = ljmod  ljmetropolis
 	# metropolis
+RANDOM =
 
 CLUSTER = jackknife
 
 COSEACASO = funzioni procedure_ex
 
 
-MODULES =   $(GLOBAL) $(CLUSTER) # $(SIMULATIONS)
+MODULES =   $(GLOBAL) $(CLUSTER) $(RANDOM) # $(SIMULATIONS)
 	# $(EXTRAS) $(ODE) $(COSEACASO)
 	
 	
 ######################  additional files for C routines  #######################
 
-CFILES = ranlxs  ranlxd  gauss  ranlux_fort  start  utils  myrint
+CFILES = ranlxs  ranlxd  gauss  ranluxf  start  utils  rintf
 
 
 ##############################  set search paths  ##############################

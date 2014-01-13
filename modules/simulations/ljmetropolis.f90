@@ -49,34 +49,7 @@ contains
             temp(2) = temp(2) + x(i)*x(i)/real(dp)(D - t)
         end do
     end function autocorrelation
-
-    ! Most general metropolis algorithm
-    subroutine metr_gen (P,state,delta)
-        procedure(weight), external, pointer :: P
-        real(dp), dimension(:), pointer :: state
-        real(dp) :: delta
-        
-        ! ausiliary variables
-        integer :: i, D
-        real(dp) :: swap, x_new, acceptance
-        real(dp), dimension(2) :: u
-        
-        D = size(state)
-        do i=0, D, 1
-            ! ranlxd(u,2);
-            ! AGGIUNGERE COMANDO PER INIZIALIZZARE RANDOM u
-            x_new = state(i) + delta*(2*u(1) - 1.0)
-            swap = state(i)
-            state(i) = x_new
-                acceptance = P(state)
-            state(i) = swap
-                acceptance = acceptance / P(state)
-		
-            if(acceptance >= u(2))
-                state(i) = x_new
-        end do
-    end subroutine metr_gen
-
+    
     
     ! Metropolis algorithm specialized to "thermal" states, i.e., with
     ! probability densities proportional to exp{F}=exp{beta*f}
