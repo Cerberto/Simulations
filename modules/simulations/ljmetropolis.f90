@@ -9,27 +9,17 @@ module metropolis
     private none
     public
     
+    integer :: nth      ! thermalization sweeps
+    integer :: nsw      ! effective sweeps
+    integer :: skip     ! skipped sweeps (for uncorrelated data)
+    
+    ! interface for the autocorrelation function
     interface
         function ac (x,t)
             real(dp) :: ac
             integer :: i, D, t
             real(dp), dimension(:), allocatable :: x
         end function ac
-        
-        function weight (x)
-            real(dp) :: weight
-            real(dp), dimension(:), allocatable :: x
-        end function weight
-    end interface
-    
-    abstract interface
-        subroutine metr (f, x, delta)
-            procedure(weight), external, pointer :: P
-            real(dp), dimension(:), allocatable :: state
-            real(dp) :: delta, swap, x_new, acceptance
-            integer :: i, D
-            real(dp), dimension(2) :: u
-        end subroutine metr
     end interface
 
 contains
@@ -50,32 +40,39 @@ contains
         end do
     end function autocorrelation
     
-    
-    ! Metropolis algorithm specialized to "thermal" states, i.e., with
-    ! probability densities proportional to exp{F}=exp{beta*f}
-    subroutine metr_th (F,state,delta)
-        procedure(weight), external, pointer :: F
-        real(dp), dimension(:), pointer :: state
-        real(dp) :: delta
-        
-        ! ausiliary variables
-        integer :: i, D
-        real(dp) :: swap, x_new, acceptance
-        real(dp), dimension(2) :: u
-        
-        D = size(state)
-        do i=0, D, 1
-            ! ranlxd(u,2);
-            ! AGGIUNGERE COMANDO PER INIZIALIZZARE RANDOM u
-            x_new = state(i) + delta*(2*u(1) - 1.0)
-            swap = state(i)
-            state(i) = x_new
-                acceptance = F(state)
-            state(i) = swap
-                acceptance = acceptance - F(state)
-            acceptance = exp(acceptance)
 
-            if(acceptance >= u(2))
-                state(i) = x_new
+!
+!   Routine implementing the Metropolis algorithm for a thermal distribution.
+!
+    subroutine thmetropolis (ptcls, k)
+        use kinds, only: dp
+        use ljmod, only: particle, delta, pstn_new, poten, side
+        implicit none
+    
+        type(particle), dimension(:) :: ptcls
+        integer :: i,k
+        real(dp), dimension(:), allocatable :: u
+        real(dp) :: t1, t2
+        real(dp), external :: delta_interaction
+    
+        allocate(u(4))
+        call ranlxdf(u,4)
+    
+        do i=1, 3, 1
+            pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
+            t1 = pstn_new(i)/side
+            call rintf(pstn_new(i), t2)
+            pstn_new(i) = pstn_new(i) - side*t2
         end do
-    end subroutine metr_th
+    
+        t1 = delta_interaction(ptcls,k)
+        t2 = exp(-t1)
+            
+        if(t2 >= u(4)) then
+            ptcls(k)%pstn = pstn_new
+            poten = poten + t1
+        end if
+    
+        deallocate(u)
+
+    end subroutine thmetropolis
