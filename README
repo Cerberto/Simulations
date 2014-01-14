@@ -1,2 +1,4 @@
 Tree for the `Simulations' course at SISSA
 by F. Becca and S. Sorella, A.Y. 2013-14
+
+Note: It is used Martin Luescher's 'ranlux' as random number generator.
