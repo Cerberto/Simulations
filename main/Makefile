@@ -1,7 +1,6 @@
 ################################################################################
 #
-#   Makefile to compile and link Fortran programs. (Hopefully) written for 
-#	merging C routines.
+#   Makefile to compile and link Fortran and C programs.
 #
 #  "make" compiles and links the specified main programs and modules
 #  using the specified libraries (if any), and produces the executables;
@@ -16,36 +15,37 @@ all: rmxeq cmpcf cmpsc mkxeq rmpmk
 
 SHELL=/bin/bash
 
-###############################  main programs  ################################
+#############################  Fortran programs  ###############################
 
-MAIN =  test # lennard-jones
-	#  test_vettori
+MAIN = lennard-jones
 
 
-###################  requided modules and external routines  ###################
-
-EXTRAS = zeros
+# requided modules and external routines
 
 GLOBAL = kind  constants
 
 ODE = numerov
 
-SIMULATIONS = ljmod  ljmetropolis
-	# metropolis
-RANDOM =
+SIMULATIONS = ljmod  ljmetropolis  ljroutines
+
+RANDOM = 
 
 CLUSTER = jackknife
 
-COSEACASO = funzioni procedure_ex
-
-
-MODULES =   $(GLOBAL) $(CLUSTER) $(RANDOM) # $(SIMULATIONS)
-	# $(EXTRAS) $(ODE) $(COSEACASO)
+MODULES =   $(GLOBAL) $(CLUSTER) $(RANDOM) $(SIMULATIONS)
 	
 	
-######################  additional files for C routines  #######################
+#################################  C programs  #################################
 
-CFILES = ranlxs  ranlxd  gauss  ranluxf  start  utils  rintf
+CMAIN =
+
+CRANDOM = ranlxs  ranlxd  gauss  ranluxf
+
+CSTART = start  utils
+
+CEXTRA = rintf
+
+CFILES =  $(CRANDOM) $(CSTART) $(CEXTRA)
 
 
 ##############################  set search paths  ##############################
@@ -64,7 +64,7 @@ LIBPATH = /usr/local/lib
 
 ###############################  for C programs  ###############################
 
-CINCLUDE = ../include  /usr/include
+CINCPATH = ../include  /usr/include
 
 CC = gcc
 
@@ -72,7 +72,7 @@ CFLAGS = -Wall -O -std=gnu99 -g -DSSE2
 
 CLIBS = m
 
-CINCDIRS = $(addprefix -I,$(CINCLUDE))
+CINCDIRS = $(addprefix -I,$(CINCPATH))
 
 CLDFLAGS = $(addprefix -L,$(LIBPATH)) $(addprefix -l,$(CLIBS))
 
@@ -93,7 +93,7 @@ $(addsuffix .o,$(CFILES)): %.o: %.c Makefile
 
 FC = gfortran
 
-FCFLAGS = -Wall -Wextra -C -g3 -fbacktrace -O2 -fbounds-check
+FCFLAGS = -C -g3 -fbacktrace -O2 -fbounds-check # -Wall -Wextra
 
 LIBS = lapack  blas
 
@@ -129,12 +129,12 @@ cmpcf: $(addsuffix .o,$(CFILES))
 cmpsc: $(addsuffix .o,$(PROGRAMS))
 
 mkxeq: $(MAIN)
-	@ echo "  linking object files and producing executables"
+	@ echo "  link object files and produce executables"
 
 
 # clean directory
 rmpmk:
-	@ -rm -rf *.o .tmp; \
+	@ -rm -rf *.d *.o .tmp; \
 		echo -e "  delete object and temporary files\n\n\t\tSTAY BOMBER!\n"
 
 .PHONY: clean

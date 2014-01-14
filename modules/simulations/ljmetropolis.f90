@@ -1,21 +1,23 @@
 
 
-module metropolis
+module ljmetr
 
-    use kinds, only: dp
-    use jackknife, only: JK, JK_cluster, JK_init !, JK_function
+    use kinds,      only: dp
+    use ljmod
+    use jackknife,  only: JK, JK_cluster, JK_init !, JK_function
     implicit none
 
-    private none
     public
     
     integer :: nth      ! thermalization sweeps
     integer :: nsw      ! effective sweeps
     integer :: skip     ! skipped sweeps (for uncorrelated data)
+    integer :: ndat     ! effective size of the final sample
     
     ! interface for the autocorrelation function
     interface
         function ac (x,t)
+            use kinds, only: dp
             real(dp) :: ac
             integer :: i, D, t
             real(dp), dimension(:), allocatable :: x
@@ -28,15 +30,14 @@ contains
         real(dp) :: autocorrelation
         integer :: t
         real(dp), dimension(:), pointer :: x
-        
-        integer :: D = size(x)
+
         integer :: i
         real(dp), dimension(3) :: temp = (/ 0, 0, 0 /)
         
-        do i=0, i<D-t
-            temp(3) = temp(3) + x(i)*x(i+t)/real(dp)(D - t)
-            temp(1) = temp(1) + x(i)/real(dp)(D - t)
-            temp(2) = temp(2) + x(i)*x(i)/real(dp)(D - t)
+        do i=0, ndat-t, 1
+            temp(3) = temp(3) + x(i)*x(i+t)/(ndat - t)
+            temp(1) = temp(1) + x(i)/(ndat - t)
+            temp(2) = temp(2) + x(i)*x(i)/(ndat - t)
         end do
     end function autocorrelation
     
@@ -45,9 +46,9 @@ contains
 !   Routine implementing the Metropolis algorithm for a thermal distribution.
 !
     subroutine thmetropolis (ptcls, k)
-        use kinds, only: dp
-        use ljmod, only: particle, delta, pstn_new, poten, side
-        implicit none
+        !use kinds, only: dp
+        !use ljmod, only: particle, delta, pstn_new, poten, side
+        !implicit none
     
         type(particle), dimension(:) :: ptcls
         integer :: i,k
@@ -76,3 +77,5 @@ contains
         deallocate(u)
 
     end subroutine thmetropolis
+
+end module ljmetr

@@ -4,6 +4,7 @@ program test
     implicit none
     
     real(dp), dimension(:), allocatable :: x
+    real(dp) :: temp
     integer :: i,n,j
     
     read *, n
@@ -14,7 +15,8 @@ program test
     do j=1, 2, 1
         call ranlxdf(x,n)
         do i=1, n, 1
-            print *, x(i)
+            call rintf(x(i),temp)
+            print *, temp
         end do
         print *, " "
     end do
