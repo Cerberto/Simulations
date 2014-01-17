@@ -43,7 +43,7 @@ CRANDOM = ranlxs  ranlxd  gauss  ranluxf
 
 CSTART = start  utils
 
-CEXTRA = rintf
+CEXTRA = rintf remainderf
 
 CFILES =  $(CRANDOM) $(CSTART) $(CEXTRA)
 

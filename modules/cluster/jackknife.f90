@@ -16,20 +16,21 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module jackknife
+    use kinds, only: dp
     implicit none
     public
 
     ! definition of the jackknife cluster
     type JK
-        real, dimension(:), allocatable :: vec  ! sample vector
+        real(dp), dimension(:), allocatable :: vec  ! sample vector
         integer :: D                        ! dimension of the sample
-        real :: mean, var                   ! mean and variance of the mean
+        real(dp) :: mean, var                   ! mean and variance of the mean
     end type JK
 
-    ! interface for a real function of a real variable
+    ! interface for a real(dp) function of a real(dp) variable
 !    interface
 !        function func (x)
-!            real :: x, func
+!            real(dp) :: x, func
 !        end function
 !    end interface
     
@@ -38,7 +39,7 @@ module jackknife
 !        function jkf (f, X)
 !            type (JK) :: jkf, X
 !            procedure(func), pointer :: f
-!            real :: temp
+!            real(dp) :: temp
 !            integer :: i
 !        end function jkf
 !    end interface    
@@ -53,19 +54,19 @@ contains
         
         D = C%D
         C%mean = 0
-        do i=0, D-1, 1
-            C%mean = C%mean + (C%vec(i))/(real(D))
+        do i=1, D, 1
+            C%mean = C%mean + (C%vec(i))/(real(D, dp))
         end do
 	
-        do i=0, D-1, 1
-            C%vec(i) = C%mean + (C%mean - C%vec(i))/(real(D - 1))
+        do i=1, D, 1
+            C%vec(i) = C%mean + (C%mean - C%vec(i))/(real(D-1, dp))
         end do
 	
-        C%var = 0;
-        do i=0, D-1, 1
+        C%var = 0
+        do i=1, D, 1
             C%var = C%var + (C%vec(i) - C%mean)*(C%vec(i) - C%mean)
         end do
-            C%var = C%var * (real(D - 1))/(real(D))
+            C%var = C%var * (real(D-1, dp))/(real(D, dp))
     end subroutine JK_cluster
 
 
@@ -76,7 +77,7 @@ contains
         C%D = D
         C%mean = 0
         C%var = 0
-        allocate(C%vec(0:D-1))
+        allocate(C%vec(D))
     end subroutine JK_init
 
 
@@ -85,10 +86,10 @@ contains
         ! definition of arguments and result
 !        type (JK) :: X, res
 !        integer :: D
-!        real, external, pointer :: f
+!        real(dp), external, pointer :: f
         ! ausiliary variables
 !        integer :: i
-!        real :: temp = 0
+!        real(dp) :: temp = 0
         
         ! initialization of the cluster for the result
 !        D = X%D
@@ -100,7 +101,7 @@ contains
 !            res%vec(i) = f(X%vec(i));
 !            temp = temp + (res%vec(i) - res%mean)*(res%vec(i) - res%mean);
 !        end do
-!        temp = temp * (real(D - 1)/real(D));
+!        temp = temp * (real(dp)(D - 1)/real(dp)(D));
 !        res%var = temp
         
 !    end function JK_function

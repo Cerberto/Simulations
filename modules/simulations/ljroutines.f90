@@ -8,7 +8,7 @@ subroutine particle_init (ptcls)
     use ljmod, only: side, N, particle, poten
     implicit none
     
-    type(particle), dimension(:) :: ptcls  ! set of particles
+    type(particle), dimension(N) :: ptcls  ! set of particles
     real(dp), external :: pair_interaction
     real(dp) :: lspc    ! lattice spacing
     integer :: i,j,k
@@ -25,20 +25,20 @@ subroutine particle_init (ptcls)
     x0(1) = -side + lspc*npsd/2
     x0(2) = x0(1)
     x0(3) = x0(1)
-    do i=0, npsd-1, 1
+    do i=1, npsd, 1
         x0(1) = x0(1) + lspc
-        do j=0, npsd-1, 1
+        do j=1, npsd, 1
             x0(2) = x0(2) + lspc
-            do k=0, npsd-1, 1
+            do k=1, npsd, 1
                 x0(3) = x0(3) + lspc
-                ptcls(i+j+k)%pstn = x0      ! SI PUÒ FARE?!
+                ptcls(i+j+k-2)%pstn = x0      ! SI PUÒ FARE?!
             end do
         end do      
     end do
     
     poten = 0
-    do i=1, N-1, 1
-        do j=0, i-1, 1
+    do i=2, N, 1
+        do j=1, i-1, 1
             poten = poten + &
                 pair_interaction(ptcls(i)%pstn, ptcls(j)%pstn)
         end do
@@ -59,7 +59,7 @@ function pair_interaction (vec1, vec2)
     integer :: i
     
     r = 0
-    do i=0, 3, 1
+    do i=1, 3, 1
         t1 = (vec2(i) - vec1(i))*2/side
         call rintf(t1, t2)
         r = r + (vec1(i) - vec2(i) + side*t1)**2

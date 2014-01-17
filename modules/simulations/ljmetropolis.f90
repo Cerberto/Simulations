@@ -1,4 +1,19 @@
-
+!-------------------------------------------------------------------------------
+!
+!   Module containing the definitions needed for the metropolis algorithm
+!   applied to the Lennard-Jones fluid.
+!
+!   The 'thmetropolis' routine by default calculates also the kinetic energy via
+!   the virial theorem. If you are not interested in this calculation, comment
+!   the following lines
+!       
+!       real(dp), external :: delta_virial
+!       kinen = kinen + delta_virial(ptcls,k)
+!
+!   in the 'thmetropolis' routine. To initialize the variable 'kinen' (defined
+!   in th 'ljmod' module) one has to explicitly call the function 'ke_virial'
+!
+!-------------------------------------------------------------------------------
 
 module ljmetr
 
@@ -9,6 +24,7 @@ module ljmetr
 
     public
     
+    integer :: tmax     ! maximum "time" for autocorrelation
     integer :: nth      ! thermalization sweeps
     integer :: nsw      ! effective sweeps
     integer :: skip     ! skipped sweeps (for uncorrelated data)
@@ -45,7 +61,7 @@ contains
 !
 !   Routine implementing the Metropolis algorithm for a thermal distribution.
 !
-    subroutine thmetropolis (ptcls, k)
+    subroutine thmetropolis (ptcls)
         !use kinds, only: dp
         !use ljmod, only: particle, delta, pstn_new, poten, side
         !implicit none
@@ -55,10 +71,14 @@ contains
         real(dp), dimension(:), allocatable :: u
         real(dp) :: t1, t2
         real(dp), external :: delta_interaction
+        real(dp), external :: delta_virial
     
-        allocate(u(4))
-        call ranlxdf(u,4)
+        allocate(u(5))
+        call ranlxdf(u,5)
     
+        ! select randomly the particle to move
+            u(5) = N-(N-1)*u(5)
+            k = int(t1)
         do i=1, 3, 1
             pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
             t1 = pstn_new(i)/side
@@ -70,6 +90,7 @@ contains
         t2 = exp(-t1)
             
         if(t2 >= u(4)) then
+            kinen = kinen + delta_virial(ptcls,k)
             ptcls(k)%pstn = pstn_new
             poten = poten + t1
         end if
