@@ -26,7 +26,7 @@ GLOBAL = kind  constants
 
 ODE = numerov
 
-SIMULATIONS = ljmod  ljmetropolis  ljroutines
+SIMULATIONS = ljmod  ljmetropolis
 
 RANDOM = 
 

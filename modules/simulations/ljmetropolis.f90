@@ -19,12 +19,10 @@ module ljmetr
 
     use kinds,      only: dp
     use ljmod
-    use jackknife,  only: JK, JK_cluster, JK_init !, JK_function
     implicit none
 
     public
     
-    integer :: tmax     ! maximum "time" for autocorrelation
     integer :: nth      ! thermalization sweeps
     integer :: nsw      ! effective sweeps
     integer :: skip     ! skipped sweeps (for uncorrelated data)
@@ -62,16 +60,11 @@ contains
 !   Routine implementing the Metropolis algorithm for a thermal distribution.
 !
     subroutine thmetropolis (ptcls)
-        !use kinds, only: dp
-        !use ljmod, only: particle, delta, pstn_new, poten, side
-        !implicit none
     
         type(particle), dimension(:) :: ptcls
         integer :: i,k
         real(dp), dimension(:), allocatable :: u
         real(dp) :: t1, t2
-        real(dp), external :: delta_interaction
-        real(dp), external :: delta_virial
     
         allocate(u(5))
         call ranlxdf(u,5)
@@ -83,7 +76,7 @@ contains
         do i=1, 3, 1
             pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
             t1 = pstn_new(i)/side
-            call rintf(pstn_new(i), t2)
+            call rintf(t1, t2)
             pstn_new(i) = pstn_new(i) - side*t2
         end do
     
