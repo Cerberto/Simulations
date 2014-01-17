@@ -8,6 +8,7 @@ program LJ
     
     type(particle), dimension(:), allocatable :: ptcls
     type(JK) :: k_en, p_en
+    real(dp), dimension(:), allocatable :: k_en_array, p_en_array
     real(dp), external :: ke_virial
     integer :: sw       ! label for the 'sweeps' of the metropolis
     integer :: tmax     ! maximum time for the autocorrelation
@@ -22,12 +23,12 @@ program LJ
     call particle_init(ptcls,side)
 
     nth     = 200
-    nsw     = 1000000
+    nsw     = 100000
     skip    = 100
     tmax    = 50
     
-    side    = 100
-    delta   = 0.001
+    side    = 1000
+    delta   = 0.1
     eps     = 1.0
     sigma   = 1.0
     side    = 1000.0
@@ -46,8 +47,8 @@ program LJ
     
     kinen = ke_virial(ptcls)
     ndat = nsw/skip
-    call JK_init(k_en, ndat)
-    call JK_init(p_en, ndat)
+    allocate(k_en_array(ndat))
+    allocate(p_en_array(ndat))
     counter = 1
     do sw=1, nsw, 1
         do i=1, N, 1
@@ -55,11 +56,16 @@ program LJ
         end do
         
         if (mod(sw,skip) == 0) then
-            k_en%vec(counter) = kinen
-            p_en%vec(counter) = poten
+            k_en_array(counter) = kinen
+            p_en_array(counter) = poten
             counter = counter + 1
         end if
     end do
+    call JK_init(k_en, ndat)
+    call JK_init(p_en, ndat)
+    
+    k_en%vec = k_en_array
+    p_en%vec = p_en_array
     
     call JK_cluster(k_en)
     call JK_cluster(p_en)

@@ -86,7 +86,7 @@ function delta_interaction (ptcls, k)
     
     t2 = 0
     delta_interaction = 0
-    do i=0, N, 1
+    do i=1, N, 1
         if (i /= k) then
             t1 = pair_interaction(ptcls(i)%pstn, ptcls(k)%pstn)
             t2 = pair_interaction(ptcls(i)%pstn, pstn_new)
@@ -109,7 +109,7 @@ function pair_virial (vec1, vec2)
     integer :: i
     
     r = 0
-    do i=0, 3, 1
+    do i=1, 3, 1
         t1 = (vec2(i) - vec1(i))*2/side
         call rintf(t1, t2)
         r = r + (vec1(i) - vec2(i) + side*t1)**2
@@ -161,8 +161,8 @@ function ke_virial (ptcls)
     integer :: i,j,k
     
     ke_virial = 0
-    do i=1, N, 1
-        do j=0, i-1, 1
+    do i=2, N, 1
+        do j=1, i-1, 1
             ke_virial = ke_virial + &
                 pair_virial(ptcls(i)%pstn, ptcls(j)%pstn)
         end do

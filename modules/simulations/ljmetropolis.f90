@@ -77,8 +77,9 @@ contains
         call ranlxdf(u,5)
     
         ! select randomly the particle to move
-            u(5) = N-(N-1)*u(5)
-            k = int(t1)
+            u(5) = (N-1)*u(5)
+            t1 = modulo(u(5), real(N))
+            k = int(t1) + 1
         do i=1, 3, 1
             pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
             t1 = pstn_new(i)/side
