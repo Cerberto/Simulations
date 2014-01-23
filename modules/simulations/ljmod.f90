@@ -13,10 +13,11 @@ module ljmod
     end type particle
     
     real(dp) :: side        ! side of the cubic box
-    integer :: N            ! number of particles
+    integer  :: N           ! number of particles
     real(dp) :: sigma       ! unit of length (0 of the LJ potential)
     real(dp) :: eps         ! unit of energy (depth of the LJ potential well)
-    real(dp) :: delta       ! (twice the) maximum displacement in the metropolis 
+    real(dp) :: delta       ! (twice the) maximum displacement in the metropolis
+    real(dp) :: core        ! core radius (to avoid divergences) 
     
     ! potential energy and kinetic energy (virial)
     real(dp) :: poten, kinen
@@ -35,9 +36,9 @@ contains
         
         type(particle), dimension(:) :: ptcls  ! set of particles
         real(dp) :: lspc    ! lattice spacing
-        integer :: i,j,k
+        integer  :: i,j,k
         real(dp) :: temp
-        integer :: npsd     ! particles per side
+        integer  :: npsd     ! particles per side
         real(dp), dimension(3) :: x0 
     
         temp = N**(1/3.0)
@@ -49,9 +50,6 @@ contains
         ! initialization of particles inside a cubic box centered in 0:
         ! particles are distributed on a cubic lattice with spacing lspc
         x0 = (/ -side/2 + lspc/2, -side/2 + lspc/2, -side/2 + lspc/2 /)
-        print *, x0(1)
-        print *, x0(2)
-        print *, x0(3)
         do i=0, npsd-1, 1
             do j=0, npsd-1, 1
                 do k=0, npsd-1, 1
@@ -93,6 +91,8 @@ contains
         if (r>side/2) then
             pair_interaction = 0
             return
+        else if (r<core) then
+            r = core
         end if
         pair_interaction = 4*eps*((sigma/r)**12 - (sigma/r)**6)
         
@@ -141,8 +141,10 @@ contains
         if (r>side/2) then
             pair_virial = 0
             return
+        else if (r<core) then
+            r = core
         end if
-        pair_virial = 24*eps*(-2*(sigma/r)**12 + (sigma/r)**6)
+        pair_virial = 12*eps*(-2*(sigma/r)**12 + (sigma/r)**6)
         
     end function pair_virial
     

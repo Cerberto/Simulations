@@ -91,7 +91,7 @@ $(addsuffix .o,$(CFILES)): %.o: %.c Makefile
 
 ############################  for Fortran programs  ############################
 
-FC = gfortran
+FC = g++
 
 FCFLAGS = -C -g3 -fbacktrace -O2 -fbounds-check # -Wall -Wextra
 

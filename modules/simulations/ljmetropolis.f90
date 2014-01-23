@@ -84,7 +84,7 @@ contains
         t2 = exp(-t1)
             
         if(t2 >= u(4)) then
-            kinen = kinen + delta_virial(ptcls,k)
+            ! kinen = kinen + delta_virial(ptcls,k)
             ptcls(k)%pstn = pstn_new
             poten = poten + t1
         end if
