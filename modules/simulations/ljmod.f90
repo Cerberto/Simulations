@@ -38,10 +38,10 @@ contains
         
         type(particle), dimension(:) :: ptcls  ! set of particles
         real(dp) :: lspc    ! lattice spacing
-        integer  :: i,j,k, counter
+        integer  :: i,j,k
         real(dp) :: temp
         integer  :: npsd     ! particles per side
-        real(dp), dimension(3) :: x0 
+        real(dp), dimension(3) :: x0, x1
     
         temp = N**(1/3.0)
         npsd = int(temp)+1
@@ -52,16 +52,14 @@ contains
         
         ! initialization of particles inside a cubic box centered in 0:
         ! particles are distributed on a cubic lattice with spacing lspc
-        counter = 0
+        !counter = 0
         x0 = (/ -side/2 + lspc/2, -side/2 + lspc/2, -side/2 + lspc/2 /)
-        do i=1, npsd, 1
-            do j=1, npsd, 1
-                do k=1, npsd, 1
-                    counter = counter + 1
-                    ptcls(counter)%pstn(1) = x0(1) + i*lspc
-                    ptcls(counter)%pstn(2) = x0(2) + j*lspc
-                    ptcls(counter)%pstn(3) = x0(3) + k*lspc
-                    if (counter == N) goto 10
+        do i=0, npsd-1, 1
+            do j=0, npsd-1, 1
+                do k=0, npsd-1, 1
+                    x1 = (/ x0(1) + i*lspc, x0(2) + j*lspc, x0(3) + k*lspc /)
+                    ptcls(i*npsd**2 + j*npsd + k + 1)%pstn = x1
+                    if (i*npsd**2 + j*npsd + k + 1 == N) goto 10
                 end do
             end do
         end do

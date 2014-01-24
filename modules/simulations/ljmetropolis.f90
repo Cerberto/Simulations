@@ -28,9 +28,6 @@ module ljmetr
     integer :: skip     ! skipped sweeps (for uncorrelated data)
     integer :: ndat     ! effective size of the final sample
     
-    ! to check whether all the particles are moved in the metropolis
-    integer, dimension(:), allocatable :: control
-    
     ! interface for the autocorrelation function
     interface
         function ac (x,t)
@@ -73,13 +70,9 @@ contains
         call ranlxdf(u,5)
     
         ! select randomly the particle to move
-            u(5) = (N-1)*u(5)
-            t1 = modulo(u(5), real(N-1))
-            k = int(t1) + 1
-            control(k) = 1
-            !
-            !   NON MUOVE MAI LA N-ESIMA !!
-            !
+            k = int(N*u(5))
+            k = modulo(k, N) + 1
+
         do i=1, 3, 1
             pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
             t1 = pstn_new(i)/side

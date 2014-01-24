@@ -4,8 +4,7 @@ program LJ
     use jackknife,  only: JK, JK_init, JK_cluster
     use ljmod,      only: particle, ptcls, N, side, sigma, eps, delta, poten, &
                           particle_init
-    use ljmetr,     only: thmetropolis, autocorrelation, nth, nsw, ndat, skip, &
-                          control !debugging!
+    use ljmetr,     only: thmetropolis, autocorrelation, nth, nsw, ndat, skip
     implicit none
     
     
@@ -23,7 +22,7 @@ program LJ
     read *, N
 
     nth     = 10000
-    nsw     = 1000000
+    nsw     = 100000
     skip    = 100
     tmax    = 50
     
@@ -31,11 +30,6 @@ program LJ
     delta   = 0.01
     eps     = 1.0e-6
     sigma   = 1.0
-    
-    allocate(control(N))
-    do i=1, N, 1
-        control(i) = 0
-    end do
     
     allocate(ptcls(N))
     call particle_init(ptcls)
@@ -67,14 +61,10 @@ program LJ
         !if (mod(sw,200) .eq. 0) then
             !print *, sw, poten
         !end if
-        write (unit=8, fmt=*), sw, poten
+        write (unit=10, fmt=*), sw, poten
     end do
     call flush (10)
     close (unit=10, status="keep")
-    
-    do i=1, N, 1
-        print *, control(i)
-    end do
     
     !
     !   Print position of particles assumed thermalized
@@ -82,8 +72,7 @@ program LJ
     open (unit=9, file="output/particle_therm.dat", status="replace", &
         action="write")
     do i=1, N, 1
-        write (unit=9, fmt=*), &
-            ptcls(i)%pstn(1), ptcls(i)%pstn(2), ptcls(i)%pstn(3)
+        write (unit=9, fmt=*), ptcls(i)%pstn 
     end do
     call flush (9)
     close (unit=9, status="keep")
