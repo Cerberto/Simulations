@@ -93,7 +93,7 @@ $(addsuffix .o,$(CFILES)): %.o: %.c Makefile
 
 FC = gfortran
 
-FCFLAGS = -C -g3 -fbacktrace -O3 -fbounds-check # -Wall -Wextra
+FCFLAGS = -C -g3 -fbacktrace -O3 -fbounds-check -Wall -Wextra
 
 LIBS = lapack  blas
 

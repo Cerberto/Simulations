@@ -3,16 +3,6 @@
 !   Module containing the definitions needed for the metropolis algorithm
 !   applied to the Lennard-Jones fluid.
 !
-!   The 'thmetropolis' routine by default calculates also the kinetic energy via
-!   the virial theorem. If you are not interested in this calculation, comment
-!   the following lines
-!       
-!       real(dp), external :: delta_virial
-!       kinen = kinen + delta_virial(ptcls,k)
-!
-!   in the 'thmetropolis' routine. To initialize the variable 'kinen' (defined
-!   in th 'ljmod' module) one has to explicitly call the function 'ke_virial'
-!
 !-------------------------------------------------------------------------------
 
 module ljmetr
@@ -27,6 +17,7 @@ module ljmetr
     integer :: nsw      ! effective sweeps
     integer :: skip     ! skipped sweeps (for uncorrelated data)
     integer :: ndat     ! effective size of the final sample
+    integer :: nbin     ! number of sweeps per bin (for uncorrelated data)
     
     ! interface for the autocorrelation function
     interface
@@ -48,19 +39,22 @@ contains
         integer :: i
         real(dp), dimension(3) :: temp = (/ 0, 0, 0 /)
         
-        do i=0, ndat-t, 1
+        do i=1, ndat-t, 1
             temp(3) = temp(3) + x(i)*x(i+t)/(ndat - t)
             temp(1) = temp(1) + x(i)/(ndat - t)
             temp(2) = temp(2) + x(i)*x(i)/(ndat - t)
         end do
+        autocorrelation = (temp(3) - temp(1)**2)/temp(2)
+        
     end function autocorrelation
     
 
 !
 !   Routine implementing the Metropolis algorithm for a thermal distribution.
 !
-    subroutine thmetropolis (ptcls)
+    function thmetropolis (ptcls)
     
+        real(dp) :: thmetropolis
         type(particle), dimension(:) :: ptcls
         integer :: i,k
         real(dp), dimension(:), allocatable :: u
@@ -68,6 +62,7 @@ contains
         
         allocate(u(5))
         call ranlxdf(u,5)
+        thmetropolis = 0
     
         ! select randomly the particle to move
             k = int(N*u(5))
@@ -81,16 +76,16 @@ contains
         end do
     
         t1 = delta_interaction(ptcls,k)
-        t2 = exp(-t1)
+        t2 = exp(-beta*t1)
             
         if(t2 >= u(4)) then
-            ! kinen = kinen + delta_virial(ptcls,k)
             ptcls(k)%pstn = pstn_new
             poten = poten + t1
+            thmetropolis = 1
         end if
     
         deallocate(u)
 
-    end subroutine thmetropolis
+    end function thmetropolis
 
 end module ljmetr

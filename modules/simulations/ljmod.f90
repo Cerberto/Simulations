@@ -1,7 +1,11 @@
+
+!-------------------------------------------------------------------------------
 !
 !   Module containing global types and variables for the Lennard-Jones
 !   Metropolis calculations
 !
+!-------------------------------------------------------------------------------
+
 module ljmod
     use kinds, only: dp
     implicit none
@@ -15,14 +19,15 @@ module ljmod
     type(particle), dimension(:), allocatable :: ptcls
     
     real(dp) :: side        ! side of the cubic box
+    real(dp) :: rho         ! average density
+    real(dp) :: lspc        ! lattice spacing
     integer  :: N           ! number of particles
     real(dp) :: sigma       ! unit of length (0 of the LJ potential)
     real(dp) :: eps         ! unit of energy (depth of the LJ potential well)
     real(dp) :: delta       ! (twice the) maximum displacement in the metropolis
-    real(dp) :: core        ! core radius (to avoid divergences) 
+    real(dp) :: beta        ! inverse temperature
     
-    ! potential energy and kinetic energy (virial)
-    real(dp) :: poten, kinen
+    real(dp) :: poten       ! potential energy
     
     ! auxiliary vector (position updating) for the metropolis
     real(dp), dimension(3) :: pstn_new
@@ -37,8 +42,7 @@ contains
     subroutine particle_init (ptcls)
         
         type(particle), dimension(:) :: ptcls  ! set of particles
-        real(dp) :: lspc    ! lattice spacing
-        integer  :: i,j,k
+        integer  :: i,j,k,counter
         real(dp) :: temp
         integer  :: npsd     ! particles per side
         real(dp), dimension(3) :: x0, x1
@@ -52,18 +56,19 @@ contains
         
         ! initialization of particles inside a cubic box centered in 0:
         ! particles are distributed on a cubic lattice with spacing lspc
-        !counter = 0
+        counter = 0
         x0 = (/ -side/2 + lspc/2, -side/2 + lspc/2, -side/2 + lspc/2 /)
         do i=0, npsd-1, 1
             do j=0, npsd-1, 1
                 do k=0, npsd-1, 1
+                    counter = counter + 1
                     x1 = (/ x0(1) + i*lspc, x0(2) + j*lspc, x0(3) + k*lspc /)
-                    ptcls(i*npsd**2 + j*npsd + k + 1)%pstn = x1
-                    if (i*npsd**2 + j*npsd + k + 1 == N) goto 10
+                    ptcls(counter)%pstn = x1
+                    if (counter == N) goto 10
                 end do
             end do
         end do
-    
+        
 10      poten = 0
         do i=2, N, 1
             do j=1, i-1, 1
@@ -80,24 +85,22 @@ contains
     !
     function pair_interaction (vec1, vec2)
         
-        real(dp) :: pair_interaction, r, t1, t2
+        real(dp) :: pair_interaction, r2, t1, t2
         real(dp), dimension(:) :: vec1, vec2
         integer :: i
         
-        r = 0
+        pair_interaction = 0.d0
+                
+        r2 = 0
         do i=1, 3, 1
-            t1 = (vec2(i) - vec1(i))*2/side
+            t1 = (vec2(i) - vec1(i))/side
             call rintf(t1, t2)
-            r = r + (vec1(i) - vec2(i) + side*t1)**2
+            r2 = r2 + (vec1(i) - vec2(i) + side*t2)**2
         end do
-        r = sqrt(r)
-        if (r>side/2) then
-            pair_interaction = 0
-            return
-        else if (r<core) then
-            r = core
+        
+        if (r2 < side/2.d0) then
+            pair_interaction = 4.d0*eps*(sigma**12/r2**6 - sigma**6/r2**3)
         end if
-        pair_interaction = 4*eps*((sigma/r)**12 - (sigma/r)**6)
         
     end function pair_interaction
     
@@ -123,76 +126,26 @@ contains
         end do
     
     end function delta_interaction
-    
-    
-    !
-    !   Pair interaction
-    !
-    function pair_virial (vec1, vec2)
-        
-        real(dp) :: pair_virial, r, t1, t2
-        real(dp), dimension(:) :: vec1, vec2
-        integer :: i
-        
-        r = 0
-        do i=1, 3, 1
-            t1 = (vec2(i) - vec1(i))*2/side
-            call rintf(t1, t2)
-            r = r + (vec1(i) - vec2(i) + side*t1)**2
-        end do
-        r = sqrt(r)
-        if (r>side/2) then
-            pair_virial = 0
-            return
-        else if (r<core) then
-            r = core
-        end if
-        pair_virial = 12*eps*(-2*(sigma/r)**12 + (sigma/r)**6)
-        
-    end function pair_virial
-    
-
-    !
-    !   Interaction energy difference when displacing the k-th particle
-    !
-    function delta_virial (ptcls, k)
-    
-        real(dp) :: delta_virial
-        real(dp) :: t1, t2
-        type(particle), dimension(:) :: ptcls
-        integer :: k, i
-    
-        t2 = 0
-        delta_virial = 0
-        do i=1, N, 1
-            if (i /= k) then
-                t1 = pair_virial(ptcls(i)%pstn, ptcls(k)%pstn)
-                t2 = pair_virial(ptcls(i)%pstn, pstn_new)
-                delta_virial = delta_virial - t1 + t2
-            end if
-        end do
-
-    end function delta_virial
 
 
     !
     !   Total kinetic energy, using the virial theorem
     !
-    function ke_virial (ptcls)
+    function total_interaction (ptcls)
     
-        real(dp) :: ke_virial, t1, t2, rsq
+        real(dp) :: total_interaction
         type(particle), dimension(:) :: ptcls
-        integer :: i,j,k
+        integer :: i,j
     
-        ke_virial = 0
+        total_interaction = 0
         do i=2, N, 1
             do j=1, i-1, 1
-                ke_virial = ke_virial + &
-                  pair_virial(ptcls(i)%pstn, ptcls(j)%pstn)
+                total_interaction = total_interaction + &
+                  pair_interaction(ptcls(i)%pstn, ptcls(j)%pstn)
             end do
         end do
     
-    end function ke_virial
+    end function total_interaction
 
 
 end module ljmod

@@ -1,35 +1,54 @@
+
+!-------------------------------------------------------------------------------
+!
+!   Simulation of a Lennard-Jones fluid with the Metropolis algorithm.
+!   The program computes the potential energy per particle and the specific heat
+!   per particle.
+!
+!-------------------------------------------------------------------------------
+
 program LJ
     
     use kinds,      only: dp
     use jackknife,  only: JK, JK_init, JK_cluster
-    use ljmod,      only: particle, ptcls, N, side, sigma, eps, delta, poten, &
-                          particle_init
-    use ljmetr,     only: thmetropolis, autocorrelation, nth, nsw, ndat, skip
+    use ljmod,      only: N, side, sigma, eps, delta, beta, poten, rho, &
+                          particle, ptcls, particle_init, total_interaction
+    use ljmetr,     only: thmetropolis, nth, nsw, ndat, nbin
     implicit none
     
     
-    type(JK) :: p_en !, k_en
-    real(dp), dimension(:), allocatable :: p_en_array !, k_en_array
-!    real(dp), external :: ke_virial
-    real(dp) :: sum1, sum2
+    type(JK) :: p_en, cv
+    real(dp), dimension(:), allocatable :: p_en_array, cv_array
+
+    real(dp) :: sum_p_en, sum_cv, acpt_rate
     integer :: sw       ! label for the 'sweeps' of the metropolis
     integer :: tmax     ! maximum time for the autocorrelation
-    integer :: i, counter, check
+    integer :: i, counter
+    
+    open (unit=8, file="output/particle_init.dat", status="replace", &
+        action="write")
+    open (unit=9, file="output/particle_therm.dat", status="replace", &
+        action="write")
+    open (unit=10, file="output/potential.dat", status="replace", &
+        action="write")
     
     call rlxdinit(1,rand(time()))
     
-    print *, "Number of particles: "
     read *, N
 
-    nth     = 10000
-    nsw     = 100000
-    skip    = 100
-    tmax    = 50
+    read *, nth
+    read *, nsw
+    read *, nbin
+    read *, tmax
+
+    read *, rho
+    read *, delta
+    read *, eps
+    read *, sigma
+    read *, beta
     
-    side    = (2.0*N)**(1/3.0)
-    delta   = 0.01
-    eps     = 1.0e-6
-    sigma   = 1.0
+    acpt_rate = 0
+    side    = (N/rho)**(1/3.0)
     
     allocate(ptcls(N))
     call particle_init(ptcls)
@@ -37,74 +56,87 @@ program LJ
     !
     !   Print position of particles right after initialization
     !
-    open (unit=8, file="output/particle_init.dat", status="replace", &
-        action="write")
-    do i=1, N, 1
-        write (unit=8, fmt=*), &
-            ptcls(i)%pstn(1), ptcls(i)%pstn(2), ptcls(i)%pstn(3)
+    do i=1, N
+        write (8,*), ptcls(i)%pstn
     end do
     call flush(8)
-    close (unit=8, iostat=check, status="keep")
-    print *, "Init file closure: ", check
-
-    print *, poten
+    close (unit=8)
+    
     !
     !   Thermalization
     !
-    open (unit=10, file="output/potential_term.dat", status="replace", &
-        action="write")
-    do sw=1, nth, 1
-        do i=1, N, 1
-            call thmetropolis(ptcls)
+    acpt_rate = 0
+    do sw=1, nth
+        do i=1, N
+            acpt_rate = acpt_rate + thmetropolis(ptcls)/(nth*N)
         end do
-        
-        !if (mod(sw,200) .eq. 0) then
-            !print *, sw, poten
-        !end if
-        write (unit=10, fmt=*), sw, poten
     end do
-    call flush (10)
-    close (unit=10, status="keep")
+    print *, "Acceptance rate (in thermalization) :", acpt_rate
+
     
     !
     !   Print position of particles assumed thermalized
     !
-    open (unit=9, file="output/particle_therm.dat", status="replace", &
-        action="write")
     do i=1, N, 1
-        write (unit=9, fmt=*), ptcls(i)%pstn 
+        write (9,*), ptcls(i)%pstn
     end do
     call flush (9)
-    close (unit=9, status="keep")
-    print *, "Therm file closure: ", check
+    close (unit=9)
     
-    ! kinen = ke_virial(ptcls)
-    ndat = nsw/skip
-    ! allocate(k_en_array(ndat))
+    ndat = nsw/nbin
+    
     allocate(p_en_array(ndat))
+    allocate(cv_array(ndat))
     counter = 1
+    acpt_rate = 0
+    sum_cv = 0
+    sum_p_en = 0
     do sw=1, nsw, 1
         do i=1, N, 1
-            call thmetropolis(ptcls)
+            acpt_rate = acpt_rate + thmetropolis(ptcls)/(nsw*N)
         end do
         
-        if (mod(sw,skip) == 0) then
-            ! k_en_array(counter) = kinen/N
-            p_en_array(counter) = poten/N
+        sum_p_en = sum_p_en + poten/nbin
+        sum_cv = sum_cv + poten**2
+        if (mod(sw,nbin) == 0) then
+            p_en_array(counter) = sum_p_en
+            cv_array(counter) = sum_cv
+            sum_p_en = 0
+            sum_cv = 0
             counter = counter + 1
         end if
     end do
-
+    write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
+    call flush (10)
+    close (10)
     
-    ! call JK_init(k_en, ndat)
-    call JK_init(p_en, ndat)
-    
-    ! k_en%vec = k_en_array
+    !
+    ! Compute mean and variance (of the mean) of the potential energy
+    !
+    call JK_init (p_en,ndat)
     p_en%vec = p_en_array
+    call JK_cluster (p_en)
     
-    ! call JK_cluster(k_en)
-    call JK_cluster(p_en)
+    do counter=1, ndat
+        cv_array(counter) = (beta**2)*(cv_array(counter) - p_en%mean**2)
+    end do
     
-    print *, 'Energy per particle        : ', p_en%mean
+    !
+    ! Compute mean and variance (of the mean) of the specific heat
+    !
+    call JK_init (cv,ndat)
+    cv%vec = cv_array
+    call JK_cluster (cv)
+    
+    print *, 'Energy per particle        :', p_en%mean/N, '+-', sqrt(p_en%var)/N
+    print *, 'Specific heat per particle :', cv%mean/N, '+-', sqrt(cv%var)/N
 
 end program LJ
+
+!
+! Super efficient debugging
+!
+subroutine pluto()
+    write (6,*) "Pluto!"
+    call flush (6)
+end subroutine pluto

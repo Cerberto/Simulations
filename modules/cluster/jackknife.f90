@@ -7,11 +7,11 @@
 !
 !   Routines are:
 !
-!   _ cluster_init -> initialization of jackknife cluster;
+!   _ JK_init -> initialization of jackknife cluster;
 !
-!   _ clusterJK -> assigns the mean and the variance of the mean.
+!   _ JK_cluster -> assigns the mean and the variance of the mean.
 !
-!   _ functionJK -> returns a clusterJK for a secondary r.v.
+!   _ JK_function -> returns a clusterJK for a secondary r.v.
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -23,7 +23,7 @@ module jackknife
     ! definition of the jackknife cluster
     type JK
         real(dp), dimension(:), allocatable :: vec  ! sample vector
-        integer :: D                        ! dimension of the sample
+        integer :: D                            ! dimension of the sample
         real(dp) :: mean, var                   ! mean and variance of the mean
     end type JK
 
@@ -101,7 +101,7 @@ contains
 !            res%vec(i) = f(X%vec(i));
 !            temp = temp + (res%vec(i) - res%mean)*(res%vec(i) - res%mean);
 !        end do
-!        temp = temp * (real(dp)(D - 1)/real(dp)(D));
+!        temp = temp * (real(D-1,dp)/real(D,dp));
 !        res%var = temp
         
 !    end function JK_function
