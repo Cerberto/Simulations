@@ -12,6 +12,8 @@ module ljmod
         real(dp), dimension(3) :: pstn
     end type particle
     
+    type(particle), dimension(:), allocatable :: ptcls
+    
     real(dp) :: side        ! side of the cubic box
     integer  :: N           ! number of particles
     real(dp) :: sigma       ! unit of length (0 of the LJ potential)
@@ -36,27 +38,33 @@ contains
         
         type(particle), dimension(:) :: ptcls  ! set of particles
         real(dp) :: lspc    ! lattice spacing
-        integer  :: i,j,k
+        integer  :: i,j,k, counter
         real(dp) :: temp
         integer  :: npsd     ! particles per side
         real(dp), dimension(3) :: x0 
     
         temp = N**(1/3.0)
-        lspc = side/(temp+2)
+        ! lspc = side/(temp+2)
         npsd = int(temp)+1
+        lspc = side/npsd
         
-        print *, lspc
+        
+        print *, "side = ", side
+        print *, "lspc = ", lspc
+        print *, "npsd = ", npsd
         
         ! initialization of particles inside a cubic box centered in 0:
         ! particles are distributed on a cubic lattice with spacing lspc
+        counter = 0
         x0 = (/ -side/2 + lspc/2, -side/2 + lspc/2, -side/2 + lspc/2 /)
-        do i=0, npsd-1, 1
-            do j=0, npsd-1, 1
-                do k=0, npsd-1, 1
-                    ptcls(i+j+k+1)%pstn(1) = x0(1) + i*lspc
-                    ptcls(i+j+k+1)%pstn(2) = x0(2) + j*lspc
-                    ptcls(i+j+k+1)%pstn(3) = x0(3) + k*lspc
-                    if (i+j+k == N) goto 10
+        do i=1, npsd, 1
+            do j=1, npsd, 1
+                do k=1, npsd, 1
+                    counter = counter + 1
+                    ptcls(counter)%pstn(1) = x0(1) + i*lspc
+                    ptcls(counter)%pstn(2) = x0(2) + j*lspc
+                    ptcls(counter)%pstn(3) = x0(3) + k*lspc
+                    if (counter == N) goto 10
                 end do
             end do
         end do

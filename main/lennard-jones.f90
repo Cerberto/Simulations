@@ -2,11 +2,12 @@ program LJ
     
     use kinds,      only: dp
     use jackknife,  only: JK, JK_init, JK_cluster
-    use ljmod
+    use ljmod,      only: particle, ptcls, N, side, sigma, eps, delta, core, &
+                          poten, particle_init
     use ljmetr,     only: thmetropolis, autocorrelation, nth, nsw, ndat, skip
     implicit none
     
-    type(particle), dimension(:), allocatable :: ptcls
+    
     type(JK) :: p_en !, k_en
     real(dp), dimension(:), allocatable :: p_en_array !, k_en_array
 !    real(dp), external :: ke_virial
@@ -33,6 +34,16 @@ program LJ
     
     allocate(ptcls(N))
     call particle_init(ptcls)
+    
+    open (unit=8, file="output/particle_init.dat", status="replace", &
+        action="write")
+    do i=1, N, 1
+        write (unit=8, fmt=*), &
+            ptcls(i)%pstn(1), ptcls(i)%pstn(2), ptcls(i)%pstn(3)
+    end do
+    call flush(8)
+    close (unit=8, iostat=check, status="keep")
+    print *, "File closure: ", check
 
     print *, poten
     !
