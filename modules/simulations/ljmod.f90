@@ -44,11 +44,8 @@ contains
         real(dp), dimension(3) :: x0 
     
         temp = N**(1/3.0)
-        ! lspc = side/(temp+2)
         npsd = int(temp)+1
         lspc = side/npsd
-        
-        
         print *, "side = ", side
         print *, "lspc = ", lspc
         print *, "npsd = ", npsd

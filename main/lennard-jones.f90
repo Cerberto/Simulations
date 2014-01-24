@@ -2,9 +2,10 @@ program LJ
     
     use kinds,      only: dp
     use jackknife,  only: JK, JK_init, JK_cluster
-    use ljmod,      only: particle, ptcls, N, side, sigma, eps, delta, core, &
-                          poten, particle_init
-    use ljmetr,     only: thmetropolis, autocorrelation, nth, nsw, ndat, skip
+    use ljmod,      only: particle, ptcls, N, side, sigma, eps, delta, poten, &
+                          particle_init
+    use ljmetr,     only: thmetropolis, autocorrelation, nth, nsw, ndat, skip, &
+                          control !debugging!
     implicit none
     
     
@@ -21,8 +22,8 @@ program LJ
     print *, "Number of particles: "
     read *, N
 
-    nth     = 2000
-    nsw     = 100000
+    nth     = 10000
+    nsw     = 1000000
     skip    = 100
     tmax    = 50
     
@@ -30,11 +31,18 @@ program LJ
     delta   = 0.01
     eps     = 1.0e-6
     sigma   = 1.0
-    core    = 0
+    
+    allocate(control(N))
+    do i=1, N, 1
+        control(i) = 0
+    end do
     
     allocate(ptcls(N))
     call particle_init(ptcls)
     
+    !
+    !   Print position of particles right after initialization
+    !
     open (unit=8, file="output/particle_init.dat", status="replace", &
         action="write")
     do i=1, N, 1
@@ -43,24 +51,43 @@ program LJ
     end do
     call flush(8)
     close (unit=8, iostat=check, status="keep")
-    print *, "File closure: ", check
+    print *, "Init file closure: ", check
 
     print *, poten
     !
     !   Thermalization
     !
+    open (unit=10, file="output/potential_term.dat", status="replace", &
+        action="write")
     do sw=1, nth, 1
         do i=1, N, 1
             call thmetropolis(ptcls)
         end do
         
-        if (mod(sw,200) .eq. 0) then
-            print *, sw, poten
-        end if
-        !
-        ! print somewhere the potential, to show the thermalization process:
-        !
+        !if (mod(sw,200) .eq. 0) then
+            !print *, sw, poten
+        !end if
+        write (unit=8, fmt=*), sw, poten
     end do
+    call flush (10)
+    close (unit=10, status="keep")
+    
+    do i=1, N, 1
+        print *, control(i)
+    end do
+    
+    !
+    !   Print position of particles assumed thermalized
+    !
+    open (unit=9, file="output/particle_therm.dat", status="replace", &
+        action="write")
+    do i=1, N, 1
+        write (unit=9, fmt=*), &
+            ptcls(i)%pstn(1), ptcls(i)%pstn(2), ptcls(i)%pstn(3)
+    end do
+    call flush (9)
+    close (unit=9, status="keep")
+    print *, "Therm file closure: ", check
     
     ! kinen = ke_virial(ptcls)
     ndat = nsw/skip
