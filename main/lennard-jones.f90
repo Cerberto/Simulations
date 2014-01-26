@@ -5,15 +5,19 @@
 !   The program computes the potential energy per particle and the specific heat
 !   per particle.
 !
+!   It is possible to choose to perform calculations at constant volume or
+!   pressure. In the main routine change
+!       'thmetropolis_v' into 'thmetropolis_p' or viceversa
+!
 !-------------------------------------------------------------------------------
 
 program LJ
     
     use kinds,      only: dp
     use jackknife,  only: JK, JK_init, JK_cluster
-    use ljmod,      only: N, side, sigma, eps, delta, beta, poten, rho, &
+    use ljmod,      only: N, side, sigma, eps, delta, beta, poten, rho, press, &
                           particle, ptcls, particle_init, total_interaction
-    use ljmetr,     only: thmetropolis, nth, nsw, ndat, nbin
+    use ljmetr,     only: thmetropolis_v, thmetropolis_p, nth, nsw, ndat, nbin
     implicit none
     
     
@@ -46,6 +50,7 @@ program LJ
     read *, eps
     read *, sigma
     read *, beta
+    read *, press
     
     acpt_rate = 0
     side    = (N/rho)**(1/3.0)
@@ -67,9 +72,7 @@ program LJ
     !
     acpt_rate = 0
     do sw=1, nth
-        do i=1, N
-            acpt_rate = acpt_rate + thmetropolis(ptcls)/(nth*N)
-        end do
+        acpt_rate = acpt_rate + thmetropolis_p(ptcls)/nth
     end do
     print *, "Acceptance rate (in thermalization) :", acpt_rate
 
@@ -92,12 +95,10 @@ program LJ
     sum_cv = 0
     sum_p_en = 0
     do sw=1, nsw, 1
-        do i=1, N, 1
-            acpt_rate = acpt_rate + thmetropolis(ptcls)/(nsw*N)
-        end do
+        acpt_rate = acpt_rate + thmetropolis_p(ptcls)/nsw
         
         sum_p_en = sum_p_en + poten/nbin
-        sum_cv = sum_cv + poten**2
+        sum_cv = sum_cv + poten**2/nbin
         if (mod(sw,nbin) == 0) then
             p_en_array(counter) = sum_p_en
             cv_array(counter) = sum_cv

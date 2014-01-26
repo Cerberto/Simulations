@@ -26,11 +26,15 @@ module ljmod
     real(dp) :: eps         ! unit of energy (depth of the LJ potential well)
     real(dp) :: delta       ! (twice the) maximum displacement in the metropolis
     real(dp) :: beta        ! inverse temperature
+    real(dp) :: press       ! pressure
     
     real(dp) :: poten       ! potential energy
     
-    ! auxiliary vector (position updating) for the metropolis
+    ! auxiliary vector (position updating) for the metropolis (canonical)
     real(dp), dimension(3) :: pstn_new
+    
+    ! auxiliary particle array for the metropolis (isoth-isob)
+    type(particle), dimension(:), allocatable :: ptcls_new
     
 contains
     
