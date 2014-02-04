@@ -121,8 +121,7 @@ contains
         side_t = side*s
         do j=1, N
             do i=1, 3
-                ptcls_new(j)%pstn(i) = ptcls(j)%pstn(i)
-                ptcls_new(j)%pstn(i) = s*ptcls_new(j)%pstn(i)
+                ptcls_new(j)%pstn(i) = s*ptcls(j)%pstn(i)
             end do
         end do
         

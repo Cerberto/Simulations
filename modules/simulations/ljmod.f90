@@ -139,7 +139,6 @@ contains
                 delta_interaction = delta_interaction - t1 + t2
             end if
         end do
-    
     end function delta_interaction
 
 
@@ -162,3 +161,4 @@ contains
     
     end function total_interaction
 
+end module ljmod
