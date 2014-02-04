@@ -83,7 +83,6 @@ contains
             t2 = exp(-beta*t1)
             
             if(t2 >= u(4)) then
-                kinen = kinen + delta_virial(ptcls,k)
                 ptcls(k)%pstn = pstn_new
                 poten = poten + t1
                 thmetropolis_v = thmetropolis_v + 1.d0/N
@@ -116,14 +115,13 @@ contains
         !   Change the volume of the box and the particle positions accordingly
         !
         call ranlxdf(u,1)
-        write (6,*) u(1)
-        
-        ! moltiplication factor for the side between 1/3 and 3
+        !write (6,*) 'dilat', u(1)
+        ! dilatation factor between 1/3 and 3
         s = u(1)*8.d0/3.d0 + 1/3.d0
-        
         side_t = side*s
         do j=1, N
             do i=1, 3
+                ptcls_new(j)%pstn(i) = ptcls(j)%pstn(i)
                 ptcls_new(j)%pstn(i) = s*ptcls_new(j)%pstn(i)
             end do
         end do
@@ -133,8 +131,7 @@ contains
         !
         do j=1, N
             call ranlxdf(u,3)
-            write (6,*) u(1:3)
-
+            !write (6,*) 'delta', u(1:3)
             do i=1, 3
                 ptcls_new(j)%pstn(i) = ptcls(j)%pstn(i) + delta*(2*u(i)-1)
                 t1 = ptcls_new(j)%pstn(i)/side
@@ -144,12 +141,11 @@ contains
         end do
         
         t1 = total_interaction(ptcls_new)
-        t2 = -beta*(press*(side_t**3 - side**3) + t1 - poten) + 3*N*log(s)
+        t2 = -beta*(press*(side_t**3 - side**3) + t1 - poten) + 3.d0*N*log(s)
         t2 = exp(t2)
         
         call ranlxdf(u,1)
-        write (6,*) u(1)
-        
+        !write (6,*), 'acpt', u(1)
         if(t2 >= u(1)) then
             side = side_t
             do i=1, N
@@ -161,6 +157,7 @@ contains
         
         deallocate(ptcls_new)
         deallocate(u)
+        
     end function thmetropolis_p
     
 end module ljmetr

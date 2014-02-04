@@ -6,7 +6,8 @@
 50      # tmax
 
 0.5     # rho  
-0.2     # delta
+0.1     # delta
 1.0     # eps
 1.0     # sigma
-1.0     # pressure
+0.5     # beta
+0.1     # pressure

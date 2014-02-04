@@ -99,6 +99,8 @@ program LJ
     call flush (9)
     close (unit=9)
     
+    stop
+    
     counter = 1
     acpt_rate = 0
     sum_cv = 0
