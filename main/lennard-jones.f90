@@ -16,7 +16,8 @@ program LJ
     use kinds,      only: dp
     use jackknife,  only: JK, JK_init, JK_cluster
     use ljmod,      only: N, side, sigma, eps, delta, beta, poten, rho, press, &
-                          particle, ptcls, particle_init, total_interaction
+                          rcutoff, particle, ptcls, particle_init, &
+                          total_interaction
     use ljmetr,     only: thmetropolis_v, thmetropolis_p, nth, nsw, ndat, nbin
     implicit none
     
@@ -35,6 +36,8 @@ program LJ
         action="write")
     open (unit=10, file="output/potential.dat", status="replace", &
         action="write")
+    open(unit=12, file='output/ken_vs_T.dat', status="replace", &
+        action="write")
     
     call rlxdinit(1,rand(time()))
     
@@ -44,6 +47,8 @@ program LJ
     read *, nsw
     read *, nbin
     read *, tmax
+    
+    ndat = nsw/nbin
 
     read *, rho
     read *, delta
@@ -54,8 +59,14 @@ program LJ
     
     acpt_rate = 0
     side    = (N/rho)**(1/3.0)
+    rcutoff = side/2.d0
     
     allocate(ptcls(N))
+    allocate(p_en_array(ndat))
+    allocate(cv_array(ndat))
+    call JK_init (p_en,ndat)
+    call JK_init (cv,ndat)
+    
     call particle_init(ptcls)
     
     !
@@ -73,9 +84,11 @@ program LJ
     acpt_rate = 0
     do sw=1, nth
         acpt_rate = acpt_rate + thmetropolis_p(ptcls)/nth
+        if (mod(sw,nbin)==0) then
+            write (10,*) sw/nbin, poten
+        end if
     end do
-    print *, "Acceptance rate (in thermalization) :", acpt_rate
-
+    write (6,*) "Acceptance rate (in thermalization) :", acpt_rate
     
     !
     !   Print position of particles assumed thermalized
@@ -86,10 +99,6 @@ program LJ
     call flush (9)
     close (unit=9)
     
-    ndat = nsw/nbin
-    
-    allocate(p_en_array(ndat))
-    allocate(cv_array(ndat))
     counter = 1
     acpt_rate = 0
     sum_cv = 0
@@ -100,9 +109,10 @@ program LJ
         sum_p_en = sum_p_en + poten/nbin
         sum_cv = sum_cv + poten**2/nbin
         if (mod(sw,nbin) == 0) then
+            write (10,*) (sw+nth)/nbin, poten
             p_en_array(counter) = sum_p_en
-            cv_array(counter) = sum_cv
             sum_p_en = 0
+            cv_array(counter) = sum_cv
             sum_cv = 0
             counter = counter + 1
         end if
@@ -114,23 +124,23 @@ program LJ
     !
     ! Compute mean and variance (of the mean) of the potential energy
     !
-    call JK_init (p_en,ndat)
     p_en%vec = p_en_array
     call JK_cluster (p_en)
-    
-    do counter=1, ndat
-        cv_array(counter) = (beta**2)*(cv_array(counter) - p_en%mean**2)
-    end do
     
     !
     ! Compute mean and variance (of the mean) of the specific heat
     !
-    call JK_init (cv,ndat)
+    do counter=1, ndat
+        cv_array(counter) = (beta**2)*(cv_array(counter) - p_en%mean**2)
+    end do
     cv%vec = cv_array
     call JK_cluster (cv)
     
-    print *, 'Energy per particle        :', p_en%mean/N, '+-', sqrt(p_en%var)/N
-    print *, 'Specific heat per particle :', cv%mean/N, '+-', sqrt(cv%var)/N
+    write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
+    write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
+    
+    
+    close (12)
 
 end program LJ
 

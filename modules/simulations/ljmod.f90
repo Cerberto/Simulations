@@ -27,8 +27,9 @@ module ljmod
     real(dp) :: delta       ! (twice the) maximum displacement in the metropolis
     real(dp) :: beta        ! inverse temperature
     real(dp) :: press       ! pressure
+    real(dp) :: rcutoff     ! cutoff radius
     
-    real(dp) :: poten       ! potential energy
+    real(dp) :: poten, kinen       ! potential energy
     
     ! auxiliary vector (position updating) for the metropolis (canonical)
     real(dp), dimension(3) :: pstn_new
@@ -54,17 +55,17 @@ contains
         temp = N**(1/3.0)
         npsd = int(temp)+1
         lspc = side/npsd
-        print *, "side = ", side
-        print *, "lspc = ", lspc
-        print *, "npsd = ", npsd
+        !print *, "side = ", side
+        !print *, "lspc = ", lspc
+        !print *, "npsd = ", npsd
         
         ! initialization of particles inside a cubic box centered in 0:
         ! particles are distributed on a cubic lattice with spacing lspc
         counter = 0
         x0 = (/ -side/2 + lspc/2, -side/2 + lspc/2, -side/2 + lspc/2 /)
-        do i=0, npsd-1, 1
-            do j=0, npsd-1, 1
-                do k=0, npsd-1, 1
+        do i=0, npsd-1
+            do j=0, npsd-1
+                do k=0, npsd-1
                     counter = counter + 1
                     x1 = (/ x0(1) + i*lspc, x0(2) + j*lspc, x0(3) + k*lspc /)
                     ptcls(counter)%pstn = x1
@@ -74,12 +75,16 @@ contains
         end do
         
 10      poten = 0
-        do i=2, N, 1
-            do j=1, i-1, 1
+        kinen = 0
+        do i=2, N
+            do j=1, i-1
                 poten = poten + &
                   pair_interaction(ptcls(i)%pstn, ptcls(j)%pstn)
+                kinen = kinen + &
+                  pair_virial(ptcls(i)%pstn, ptcls(j)%pstn)
             end do
         end do
+        !write (6,*) 'Potential after initialization: ', poten
         
     end subroutine particle_init
     
@@ -102,7 +107,7 @@ contains
             r2 = r2 + (vec1(i) - vec2(i) + side*t2)**2
         end do
         
-        if (r2 < side/2.d0) then
+        if (r2 < rcutoff**2) then
             pair_interaction = 4.d0*eps*(sigma**12/r2**6 - sigma**6/r2**3)
         end if
         
@@ -133,7 +138,7 @@ contains
 
 
     !
-    !   Total kinetic energy, using the virial theorem
+    !   Total potential energy
     !
     function total_interaction (ptcls)
     
@@ -151,5 +156,74 @@ contains
     
     end function total_interaction
 
+!-------------------------------------------------------------------------------
 
+    !
+    !   Pair contribution to the virial theorem
+    !
+    function pair_virial (vec1, vec2)
+        
+        real(dp) :: pair_virial, r2, t1, t2
+        real(dp), dimension(:) :: vec1, vec2
+        integer :: i
+        
+        pair_virial = 0.d0
+                
+        r2 = 0
+        do i=1, 3, 1
+            t1 = (vec2(i) - vec1(i))/side
+            call rintf(t1, t2)
+            r2 = r2 + (vec1(i) - vec2(i) + side*t2)**2
+        end do
+        
+        if (r2 < rcutoff**2) then
+            pair_virial = 24.d0*eps*(-2.d0*sigma**12/r2**6 + sigma**6/r2**3)
+        end if
+        
+    end function pair_virial
+    
+    
+    !
+    !   Difference in the kinetic energy via virial theorem when displacing the
+    !   k-th particle
+    !
+    function delta_virial (ptcls, k)
+        
+        real(dp) :: delta_virial
+        real(dp) :: t1, t2
+        type(particle), dimension(:) :: ptcls
+        integer :: k, i
+        
+        t2 = 0
+        delta_virial = 0
+        do i=1, N, 1
+            if (i /= k) then
+                t1 = pair_virial(ptcls(i)%pstn, ptcls(k)%pstn)
+                t2 = pair_virial(ptcls(i)%pstn, pstn_new)
+                delta_virial = delta_virial - t1 + t2
+            end if
+        end do
+    
+    end function delta_virial
+
+
+    !
+    !   Total kinetic energy, using the virial theorem
+    !
+    function total_virial (ptcls)
+    
+        real(dp) :: total_virial
+        type(particle), dimension(:) :: ptcls
+        integer :: i,j
+    
+        total_virial = 0
+        do i=2, N, 1
+            do j=1, i-1, 1
+                total_virial = total_virial + &
+                  pair_virial(ptcls(i)%pstn, ptcls(j)%pstn)
+            end do
+        end do
+    
+    end function total_virial
+    
 end module ljmod
