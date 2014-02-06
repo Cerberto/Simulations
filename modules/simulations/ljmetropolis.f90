@@ -115,9 +115,8 @@ contains
         !   Change the volume of the box and the particle positions accordingly
         !
         call ranlxdf(u,1)
-        !write (6,*) 'dilat', u(1)
-        ! dilatation factor between 1/3 and 3
-        s = u(1)*8.d0/3.d0 + 1/3.d0
+        ! dilatation factor within 1 +- 0.05
+        s = 1.d0 + 0.d05*(2*u(1) - 1.d0)
         side_t = side*s
         do j=1, N
             do i=1, 3
@@ -130,7 +129,6 @@ contains
         !
         do j=1, N
             call ranlxdf(u,3)
-            !write (6,*) 'delta', u(1:3)
             do i=1, 3
                 ptcls_new(j)%pstn(i) = ptcls(j)%pstn(i) + delta*(2*u(i)-1)
                 t1 = ptcls_new(j)%pstn(i)/side
@@ -144,7 +142,6 @@ contains
         t2 = exp(t2)
         
         call ranlxdf(u,1)
-        !write (6,*), 'acpt', u(1)
         if(t2 >= u(1)) then
             side = side_t
             do i=1, N
@@ -158,5 +155,74 @@ contains
         deallocate(u)
         
     end function thmetropolis_p
+    
+    
+    !--------------------------- Alternative version ---------------------------
+    
+    function thmetropolis_p_alt (ptcls)
+    
+        real(dp) :: thmetropolis_p_alt
+        type(particle), dimension(:) :: ptcls
+        integer :: i,j,k
+        real(dp), dimension(:), allocatable :: u
+        real(dp) :: t1, t2, side_t, s
+        
+        allocate(u(5))
+        allocate(ptcls_new(N))
+        thmetropolis_p_alt = 0.d0
+        
+        !
+        !   Change the volume of the box and the particle positions accordingly
+        !
+        call ranlxdf(u,2)
+        ! dilatation factor within 1 +- 0.05
+        s = 1.d0 + 0.d05*(2*u(1) - 1.d0)
+        side_t = side*s
+        do j=1, N
+            do i=1, 3
+                ptcls_new(j)%pstn(i) = s*ptcls(j)%pstn(i)
+            end do
+        end do
+        t1 = total_interaction(ptcls_new)
+        t2 = -beta*(press*(side_t**3 - side**3) + t1 - poten) + 3.d0*N*log(s)
+        t2 = exp(t2)
+        if(t2 >= u(2)) then
+            side = side_t
+            do i=1, N
+                ptcls(i)%pstn = ptcls_new(i)%pstn
+            end do
+            poten = t1
+            thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
+        end if
+        
+        !
+        !   Then do as at fixed volume
+        !
+        do j=1, N
+            call ranlxdf(u,5)
+            k = int(N*u(5))
+            k = modulo(k, N) + 1
+
+            do i=1, 3, 1
+                pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
+                t1 = pstn_new(i)/side
+                call rintf(t1, t2)
+                pstn_new(i) = pstn_new(i) - side*t2
+            end do
+    
+            t1 = delta_interaction(ptcls,k)
+            t2 = exp(-beta*t1)
+            
+            if(t2 >= u(4)) then
+                ptcls(k)%pstn = pstn_new
+                poten = poten + t1
+                thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
+            end if
+        end do
+        
+        deallocate(ptcls_new)
+        deallocate(u)
+        
+    end function thmetropolis_p_alt
     
 end module ljmetr

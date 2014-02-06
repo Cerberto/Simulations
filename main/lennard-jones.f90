@@ -90,6 +90,8 @@ program LJ
     end do
     write (6,*) "Acceptance rate (in thermalization) :", acpt_rate
     
+    stop
+    
     !
     !   Print position of particles assumed thermalized
     !
