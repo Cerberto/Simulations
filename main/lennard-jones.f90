@@ -17,8 +17,9 @@ program LJ
     use jackknife,  only: JK, JK_init, JK_cluster
     use ljmod,      only: N, side, sigma, eps, delta, beta, poten, rho, press, &
                           rcutoff, particle, ptcls, particle_init, &
-                          total_interaction
-    use ljmetr,     only: thmetropolis_v, thmetropolis_p, nth, nsw, ndat, nbin
+                          total_interaction, dv
+    use ljmetr,     only: thmetropolis_v, thmetropolis_p, thmetropolis_p_alt, &
+                          nth, nsw, ndat, nbin
     implicit none
     
     
@@ -56,6 +57,7 @@ program LJ
     read *, sigma
     read *, beta
     read *, press
+    read *, dv
     
     acpt_rate = 0
     side    = (N/rho)**(1/3.0)
@@ -83,14 +85,12 @@ program LJ
     !
     acpt_rate = 0
     do sw=1, nth
-        acpt_rate = acpt_rate + thmetropolis_p(ptcls)/nth
-        if (mod(sw,nbin)==0) then
-            write (10,*) sw/nbin, poten
+        acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nth
+        if (mod(sw,10)==0) then
+            write (10,*) sw, poten
         end if
     end do
     write (6,*) "Acceptance rate (in thermalization) :", acpt_rate
-    
-    stop
     
     !
     !   Print position of particles assumed thermalized
@@ -101,12 +101,14 @@ program LJ
     call flush (9)
     close (unit=9)
     
+    stop
+    
     counter = 1
     acpt_rate = 0
     sum_cv = 0
     sum_p_en = 0
     do sw=1, nsw, 1
-        acpt_rate = acpt_rate + thmetropolis_p(ptcls)/nsw
+        acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nsw
         
         sum_p_en = sum_p_en + poten/nbin
         sum_cv = sum_cv + poten**2/nbin

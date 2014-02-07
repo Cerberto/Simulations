@@ -105,7 +105,7 @@ contains
         type(particle), dimension(:) :: ptcls
         integer :: i,j
         real(dp), dimension(:), allocatable :: u
-        real(dp) :: t1, t2, side_t, s
+        real(dp) :: t1, t2, side_sw, s
         
         allocate(u(3))
         allocate(ptcls_new(N))
@@ -116,8 +116,9 @@ contains
         !
         call ranlxdf(u,1)
         ! dilatation factor within 1 +- 0.05
-        s = 1.d0 + 0.d05*(2*u(1) - 1.d0)
-        side_t = side*s
+        s = 1.d0 + dv*(2*u(1) - 1.d0)
+        side_sw = side
+        side = side*s
         do j=1, N
             do i=1, 3
                 ptcls_new(j)%pstn(i) = s*ptcls(j)%pstn(i)
@@ -138,17 +139,18 @@ contains
         end do
         
         t1 = total_interaction(ptcls_new)
-        t2 = -beta*(press*(side_t**3 - side**3) + t1 - poten) + 3.d0*N*log(s)
+        t2 = -beta*(press*(side**3 - side_sw**3) + t1 - poten) + 3.d0*N*log(s)
         t2 = exp(t2)
         
         call ranlxdf(u,1)
         if(t2 >= u(1)) then
-            side = side_t
             do i=1, N
                 ptcls(i)%pstn = ptcls_new(i)%pstn 
             end do
             poten = t1
             thmetropolis_p = thmetropolis_p + 1.d0
+        else
+            side = side_sw
         end if
         
         deallocate(ptcls_new)
@@ -165,34 +167,48 @@ contains
         type(particle), dimension(:) :: ptcls
         integer :: i,j,k
         real(dp), dimension(:), allocatable :: u
-        real(dp) :: t1, t2, side_t, s
+        real(dp) :: t1, t2, s, p6_sw, p12_sw
         
         allocate(u(5))
-        allocate(ptcls_new(N))
         thmetropolis_p_alt = 0.d0
         
         !
         !   Change the volume of the box and the particle positions accordingly
         !
         call ranlxdf(u,2)
-        ! dilatation factor within 1 +- 0.05
-        s = 1.d0 + 0.d05*(2*u(1) - 1.d0)
-        side_t = side*s
-        do j=1, N
-            do i=1, 3
-                ptcls_new(j)%pstn(i) = s*ptcls(j)%pstn(i)
-            end do
-        end do
-        t1 = total_interaction(ptcls_new)
-        t2 = -beta*(press*(side_t**3 - side**3) + t1 - poten) + 3.d0*N*log(s)
+        ! dilatation factor within 1 +- dv
+        s = 1.d0 + dv*(2*u(1) - 1.d0)
+        
+        !allocate(ptcls_new(N))
+        !do j=1, N
+        !    do i=1, 3
+        !        ptcls_new(j)%pstn(i) = s*ptcls(j)%pstn(i)
+        !    end do
+        !end do
+        !p6_sw = p6
+        !p12_sw = p12
+        !t1 = total_interaction(ptcls_new)
+        !deallocate(ptcls_new)
+        t1 = p6/s**6 + p12/s**12
+        
+        t2 = -beta*(press*(s**3 - 1.d0)*side**3 + t1 - poten) + 3.d0*N*log(s)
         t2 = exp(t2)
         if(t2 >= u(2)) then
-            side = side_t
-            do i=1, N
-                ptcls(i)%pstn = ptcls_new(i)%pstn
+            side = side*s
+            do j=1, N
+                do i=1, 3
+                    ptcls(j)%pstn(i) = s*ptcls(j)%pstn(i)
+                end do
             end do
             poten = t1
-            thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
+            p6 = p6/s**6
+            p12 = p12/s**12
+            delta = delta*s
+            !thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
+            thmetropolis_p_alt = thmetropolis_p_alt + 1.d0
+        !else
+        !    p6 = p6_sw
+        !    p12 = p12_sw
         end if
         
         !
@@ -203,7 +219,7 @@ contains
             k = int(N*u(5))
             k = modulo(k, N) + 1
 
-            do i=1, 3, 1
+            do i=1, 3
                 pstn_new(i) = ptcls(k)%pstn(i) + delta*(2*u(i)-1)
                 t1 = pstn_new(i)/side
                 call rintf(t1, t2)
@@ -216,11 +232,13 @@ contains
             if(t2 >= u(4)) then
                 ptcls(k)%pstn = pstn_new
                 poten = poten + t1
-                thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
+                p6 = p6 + p6_d
+                p12 = p12 + p12_d
+         
+                !thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
             end if
         end do
         
-        deallocate(ptcls_new)
         deallocate(u)
         
     end function thmetropolis_p_alt

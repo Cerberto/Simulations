@@ -28,8 +28,11 @@ module ljmod
     real(dp) :: beta        ! inverse temperature
     real(dp) :: press       ! pressure
     real(dp) :: rcutoff     ! cutoff radius
+    real(dp) :: dv          ! maximum relative variation of side
     
-    real(dp) :: poten, p6_t, p12_t      ! potential energy
+    real(dp) :: poten, p6, p12  ! potential energy and its homogeneous parts
+    real(dp) :: p6_t, p12_t     ! hom. parts of the pair_interaction
+    real(dp) :: p6_d, p12_d     ! hom. parts of the delta_interaction
     
     ! auxiliary vector (position updating) for the metropolis (canonical)
     real(dp), dimension(3) :: pstn_new
@@ -74,17 +77,7 @@ contains
             end do
         end do
         
-10      poten = 0
-        !p6 = 0
-        !p12 = 0
-        do i=2, N
-            do j=1, i-1
-                poten = poten + &
-                  pair_interaction(ptcls(i)%pstn, ptcls(j)%pstn)
-                !p6 = p6 + p6_t
-                !p12 = p12 + p12_t
-            end do
-        end do
+10      poten = total_interaction(ptcls)
         
     end subroutine particle_init
     
@@ -100,8 +93,8 @@ contains
         
         pair_interaction = 0.d0
                 
-        r2 = 0
-        do i=1, 3, 1
+        r2 = 0.d0
+        do i=1, 3
             t1 = (vec2(i) - vec1(i))/side
             call rintf(t1, t2)
             r2 = r2 + (vec1(i) - vec2(i) + side*t2)**2
@@ -128,14 +121,14 @@ contains
         
         t2 = 0
         delta_interaction = 0
-        !p6_d = 0
-        !p12_d = 0
+        p6_d = 0
+        p12_d = 0
         do i=1, N
             if (i /= k) then
                 t1 = pair_interaction(ptcls(i)%pstn, ptcls(k)%pstn)
                 t2 = pair_interaction(ptcls(i)%pstn, pstn_new)
-                !p6_d = p6_d + p6_t
-                !p12_d = p12_d + p12_t
+                p6_d = p6_d + p6_t
+                p12_d = p12_d + p12_t
                 delta_interaction = delta_interaction - t1 + t2
             end if
         end do
@@ -151,11 +144,15 @@ contains
         type(particle), dimension(:) :: ptcls
         integer :: i,j
     
+        p6 = 0
+        p12 = 0
         total_interaction = 0
         do i=2, N
             do j=1, i-1
                 total_interaction = total_interaction + &
                   pair_interaction(ptcls(i)%pstn, ptcls(j)%pstn)
+                p6 = p6 + p6_t
+                p12 = p12 + p12_t
             end do
         end do
     
