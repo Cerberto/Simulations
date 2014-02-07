@@ -96,9 +96,14 @@ contains
 !---------------------------  Isothermal - Isobaric  ---------------------------
 
 !
-!   Routine implementing the Metropolis algorithm for a thermal distribution
+!   Routines implementing the Metropolis algorithm for a thermal distribution
 !   in the isothermal-isobaric ensemble
 !
+
+    !----------------------------  Simple version  -----------------------------
+    !
+    !  Change the volume, move the particles then accept/refuse
+    !
     function thmetropolis_p (ptcls)
     
         real(dp) :: thmetropolis_p
@@ -160,16 +165,20 @@ contains
     
     
     !--------------------------- Alternative version ---------------------------
-    
+    !
+    !   Change the volume & accept/refuse, then move particles & accept/refuse
+    !   (one particle at a time)
+    !
     function thmetropolis_p_alt (ptcls)
     
         real(dp) :: thmetropolis_p_alt
         type(particle), dimension(:) :: ptcls
         integer :: i,j,k
         real(dp), dimension(:), allocatable :: u
-        real(dp) :: t1, t2, s, p6_sw, p12_sw
+        real(dp) :: t1, t2, s
         
         allocate(u(5))
+        allocate(ptcls_new(N))
         thmetropolis_p_alt = 0.d0
         
         !
@@ -179,18 +188,12 @@ contains
         ! dilatation factor within 1 +- dv
         s = 1.d0 + dv*(2*u(1) - 1.d0)
         
-        !allocate(ptcls_new(N))
-        !do j=1, N
-        !    do i=1, 3
-        !        ptcls_new(j)%pstn(i) = s*ptcls(j)%pstn(i)
-        !    end do
-        !end do
-        !p6_sw = p6
-        !p12_sw = p12
-        !t1 = total_interaction(ptcls_new)
-        !deallocate(ptcls_new)
-        t1 = p6/s**6 + p12/s**12
-        
+        do j=1, N
+            do i=1, 3
+                ptcls_new(j)%pstn(i) = s*ptcls(j)%pstn(i)
+            end do
+        end do
+        t1 = total_interaction(ptcls_new)
         t2 = -beta*(press*(s**3 - 1.d0)*side**3 + t1 - poten) + 3.d0*N*log(s)
         t2 = exp(t2)
         if(t2 >= u(2)) then
@@ -201,14 +204,9 @@ contains
                 end do
             end do
             poten = t1
-            p6 = p6/s**6
-            p12 = p12/s**12
             delta = delta*s
             !thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
             thmetropolis_p_alt = thmetropolis_p_alt + 1.d0
-        !else
-        !    p6 = p6_sw
-        !    p12 = p12_sw
         end if
         
         !
@@ -232,14 +230,12 @@ contains
             if(t2 >= u(4)) then
                 ptcls(k)%pstn = pstn_new
                 poten = poten + t1
-                p6 = p6 + p6_d
-                p12 = p12 + p12_d
-         
                 !thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
             end if
         end do
         
         deallocate(u)
+        deallocate(ptcls_new)
         
     end function thmetropolis_p_alt
     

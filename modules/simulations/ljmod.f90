@@ -30,9 +30,7 @@ module ljmod
     real(dp) :: rcutoff     ! cutoff radius
     real(dp) :: dv          ! maximum relative variation of side
     
-    real(dp) :: poten, p6, p12  ! potential energy and its homogeneous parts
-    real(dp) :: p6_t, p12_t     ! hom. parts of the pair_interaction
-    real(dp) :: p6_d, p12_d     ! hom. parts of the delta_interaction
+    real(dp) :: poten       ! potential energy
     
     ! auxiliary vector (position updating) for the metropolis (canonical)
     real(dp), dimension(3) :: pstn_new
@@ -58,9 +56,9 @@ contains
         temp = N**(1/3.0)
         npsd = int(temp)+1
         lspc = side/npsd
-        write (6,*) "side = ", side
-        write (6,*) "lspc = ", lspc
-        !write (6,*) "npsd = ", npsd
+        write (6,*) "Initial side    = ", side
+        write (6,*) "Lattice spacing = ", lspc
+        
         
         ! initialization of particles inside a cubic box centered in 0:
         ! particles are distributed on a cubic lattice with spacing lspc
@@ -101,9 +99,7 @@ contains
         end do
         
         if (r2 < rcutoff**2) then
-            p6_t  = - 4.d0*eps*sigma**6/r2**3
-            p12_t = 4.d0*eps*sigma**12/r2**6
-            pair_interaction = p12_t + p6_t
+            pair_interaction = 4.d0*eps*(sigma**12/r2**6 - sigma**6/r2**3)
         end if
         
     end function pair_interaction
@@ -121,14 +117,10 @@ contains
         
         t2 = 0
         delta_interaction = 0
-        p6_d = 0
-        p12_d = 0
         do i=1, N
             if (i /= k) then
                 t1 = pair_interaction(ptcls(i)%pstn, ptcls(k)%pstn)
                 t2 = pair_interaction(ptcls(i)%pstn, pstn_new)
-                p6_d = p6_d + p6_t
-                p12_d = p12_d + p12_t
                 delta_interaction = delta_interaction - t1 + t2
             end if
         end do
@@ -143,16 +135,11 @@ contains
         real(dp) :: total_interaction
         type(particle), dimension(:) :: ptcls
         integer :: i,j
-    
-        p6 = 0
-        p12 = 0
         total_interaction = 0
         do i=2, N
             do j=1, i-1
                 total_interaction = total_interaction + &
                   pair_interaction(ptcls(i)%pstn, ptcls(j)%pstn)
-                p6 = p6 + p6_t
-                p12 = p12 + p12_t
             end do
         end do
     

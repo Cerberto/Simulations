@@ -27,18 +27,16 @@ program LJ
     real(dp), dimension(:), allocatable :: p_en_array, cv_array
 
     real(dp) :: sum_p_en, sum_cv, acpt_rate
-    integer :: sw       ! label for the 'sweeps' of the metropolis
-    integer :: tmax     ! maximum time for the autocorrelation
-    integer :: i, counter
+    integer :: sw, i, counter
     
-    open (unit=8, file="output/particle_init.dat", status="replace", &
-        action="write")
-    open (unit=9, file="output/particle_therm.dat", status="replace", &
-        action="write")
-    open (unit=10, file="output/potential.dat", status="replace", &
-        action="write")
-    open(unit=12, file='output/ken_vs_T.dat', status="replace", &
-        action="write")
+    open (unit=8, file='output/particle_init.dat', status='replace', &
+        action='write')
+    open (unit=9, file='output/particle_therm.dat', status='replace', &
+        action='write')
+    open (unit=10, file='output/potential.dat', status='replace', &
+        action='write')
+    open(unit=12, file='output/X_vs_p.dat', access='append', &
+        action='write')
     
     call rlxdinit(1,rand(time()))
     
@@ -90,7 +88,7 @@ program LJ
             write (10,*) sw, poten
         end if
     end do
-    write (6,*) "Acceptance rate (in thermalization) :", acpt_rate
+    write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
     
     !
     !   Print position of particles assumed thermalized
@@ -155,6 +153,6 @@ end program LJ
 ! Super efficient debugging
 !
 subroutine pluto()
-    write (6,*) "Pluto!"
+    write (6,*) 'Pluto!'
     call flush (6)
 end subroutine pluto
