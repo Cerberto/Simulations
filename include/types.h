@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* File types.h
+*		File "types.h"
 *
 * Type definitions and macros for complex numbers
 *
@@ -58,8 +58,3 @@ typedef struct
 
 
 #endif
-
-
-
-
-
