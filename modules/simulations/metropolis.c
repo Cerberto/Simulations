@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "simulations.h"
 #include "random.h"
 #include "cluster.h"
@@ -72,4 +73,24 @@ void metropolis (double (*P)(double *), double *state, int state_dim, double del
 		if(acceptance >= u[1])
 			state[i] = x_new;
 	}
+}
+
+
+/* Same as 'metropolis' but configuration space on a 1D lattice */
+void L1metropolis (double (*P)(double *), double *state, double delta)
+{
+	double swap, x_new, acceptance;
+	double u[2];
+
+	ranlxd(u,2);
+	x_new = *state + delta*(2.0*u[0] - 1.0);
+	x_new = rint(x_new);
+	swap = *state;
+	*state = x_new;
+		acceptance = P(state);
+	*state = swap;
+		acceptance /= P(state);
+	
+    if(acceptance >= u[1])
+    	*state = x_new;
 }
