@@ -34,6 +34,10 @@ double probability (double *x);
 double trialWF (double x);
 double localenergy (double x);
 
+void pluto () {
+	printf("\nPluto!");
+	fflush(stdout);
+}
 
 int main (int argc, char *argv[]) {	
 
@@ -87,7 +91,7 @@ int main (int argc, char *argv[]) {
 
 	NDAT = NSW/NBIN;
 	printf("Number of data points : %d", NDAT);
-	cluster_init(&energy, NDAT);
+	JKinit(&energy, NDAT);
 	autocorr = malloc(NSW*sizeof(double));
 
 do {
@@ -124,7 +128,7 @@ do {
 	/* Expectation value and variance of the integral are computed
 	 * with the jackknife re-sampling method
 	 **/
-	clusterJK(&energy);
+	JKcluster(&energy);
 	fprintf(integral_file, "%lf\t%.10e\t%.10e\n", varpar, energy.Mean, energy.Sigma);
 	
 	for(i=0; i<TMAX+1; i++)

@@ -13,9 +13,9 @@ typedef struct
 
 
 #ifndef JACKKNIFE_C
-extern void clusterJK(cluster *C);
-extern void cluster_init(cluster *C, int dim);
-extern cluster functionJK (double (*f)(double), cluster *X);
+extern void JKcluster(cluster *C);
+extern void JKinit(cluster *C, int dim);
+extern cluster JKfunction (double (*f)(double), cluster *X);
 #endif
 
 #endif

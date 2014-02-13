@@ -22,7 +22,7 @@
 
 
 /* Assignment of mean value and variance in a cluster structure */
-void clusterJK (cluster *C)
+void JKcluster (cluster *C)
 {
 	int i;
 	int dim = C->Dim;
@@ -44,7 +44,7 @@ void clusterJK (cluster *C)
 
 
 /* Cluster jackknive initialization */
-void cluster_init (cluster *C, int dim)
+void JKinit (cluster *C, int dim)
 {
 	C->Dim	= dim;
 	C->Mean	= 0;
@@ -53,13 +53,14 @@ void cluster_init (cluster *C, int dim)
 }
 
 
-cluster functionJK (double (*f)(double), cluster *X)
+/* Compute the JK of a secondary random variable */
+cluster JKfunction (double (*f)(double), cluster *X)
 {
 	int i;
 	double temp = 0;
 	int dim = X->Dim;
 	cluster result;
-	cluster_init(&result,dim);
+	JKinit(&result,dim);
 	result.Mean = f(X->Mean);
 	for(i=0; i<dim; i++)
 	{

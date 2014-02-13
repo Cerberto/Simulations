@@ -65,7 +65,7 @@ LIBPATH = /usr/local/lib /usr/lib
 
 CC = gcc
 
-FLAGS = -Wall -O -std=gnu99 -g -DSSE2
+FLAGS = -Wall -O -std=gnu99 -pedantic -g -DSSE2
 
 LIBS = m
 
