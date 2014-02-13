@@ -34,11 +34,11 @@ void JKcluster (cluster *C)
 	for(i=0; i<dim; i++)
 		C->Vec[i] = C->Mean + (C->Mean - C->Vec[i])/((double)(dim - 1));
 	
-	C->Sigma = 0;
+	C->Var = 0;
 	for(i=0; i<dim; i++)
 	{
-		C->Sigma += (C->Vec[i] - C->Mean)*(C->Vec[i] - C->Mean);
-		C->Sigma *= ((double)(dim - 1))/((double)dim);
+		C->Var += (C->Vec[i] - C->Mean)*(C->Vec[i] - C->Mean);
+		C->Var *= ((double)(dim - 1))/((double)dim);
 	}
 }
 
@@ -48,7 +48,7 @@ void JKinit (cluster *C, int dim)
 {
 	C->Dim	= dim;
 	C->Mean	= 0;
-	C->Sigma= 0;
+	C->Var= 0;
 	C->Vec	= malloc(dim*sizeof(double));
 }
 
@@ -68,7 +68,7 @@ cluster JKfunction (double (*f)(double), cluster *X)
 		temp += (result.Vec[i] - result.Mean)*(result.Vec[i] - result.Mean);
 		temp *= ((double)(dim - 1)/(double)dim);
 	}
-	result.Sigma = temp;
+	result.Var = temp;
 	
 	return result;
 }

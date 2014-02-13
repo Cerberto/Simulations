@@ -37,10 +37,6 @@ double probability (double *x);
 double trialWF (double x);
 double localenergy (double x);
 
-void pluto () {
-	printf("\nPluto!");
-	fflush(stdout);
-}
 
 int main (int argc, char *argv[]) {	
 
@@ -151,11 +147,11 @@ int main (int argc, char *argv[]) {
 			ld.Mean, sqrt(ld.Var) );
 
 		vpar_old = vpar;
-		/* New variational parameter calculated via Steepest Descent */
-		vpar = vpar - Dvpar*2.0*(enldcorr.Mean - energy.Mean * ld.Mean);
-		// vpar = vpar + Dvpar;
 		
-	} while (fabs(vpar - vpar_old) > accuracy  && vpar < 2.0);
+		/* New variational parameter calculated via Steepest Descent */
+		vpar = vpar - Dvpar*2.0*(enldcorr.Mean - energy.Mean * ld.Mean - 2*T);
+		
+	} while (fabs(vpar - vpar_old) > accuracy);
 
 	for(i=0; i<TMAX+1; i++)
 		fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr, i, NDAT));

@@ -8,7 +8,7 @@ typedef struct
 	double *Vec;	/* Array of data */
 	int Dim;		/* Array length */
 	double Mean;	/* Mean value on the array */
-	double Sigma;	/* Variance of the mean */
+	double Var;	/* Variance of the mean */
 } cluster;
 
 
