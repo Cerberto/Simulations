@@ -1,8 +1,11 @@
-/****
+
+/*******************************************************************************
  *
  *	Variational Monte Carlo (VMC) for the single particle in a linear potential
+ *	on a 1D lattice.
+ *	Optimization performed with the steepest descent.
  *
- ***/
+ *******************************************************************************/
 
 #define MAIN_PROGRAM
 
@@ -25,7 +28,7 @@ int NBIN;		/* number of sweeps skipped in order to avoid correlation */
 int TMAX;		/* maximum time delay for autocorrelation */
 
 double delta;	/* hypercube side */
-double varpar;	/* variational parameter of the trial wave funct */
+double vpar;	/* variational parameter of the trial wave funct */
 double T;		/* hopping amplitude */
 double V;		/* strength of the local potential */
 double L;			/* number of lattice sites */
@@ -43,7 +46,7 @@ int main (int argc, char *argv[]) {
 
 	int NDAT;	/* size of the data sample */
 	int sw, i;
-	double en_sum, site;
+	double en_sum, site, vpar_old, Dvpar, accuracy, alpha;
 	double *site_p;
 		site_p = &site;
 
@@ -87,7 +90,9 @@ int main (int argc, char *argv[]) {
 	scanf("%lf",&site);
 	scanf("%lf",&T);
 	scanf("%lf",&V);
-	scanf("%lf",&varpar);
+	scanf("%lf",&vpar);
+	scanf("%lf",&accuracy);
+	scanf("%lf",&Dvpar);
 
 	NDAT = NSW/NBIN;
 	printf("Number of data points : %d", NDAT);
@@ -129,13 +134,15 @@ do {
 	 * with the jackknife re-sampling method
 	 **/
 	JKcluster(&energy);
-	fprintf(integral_file, "%lf\t%.10e\t%.10e\n", varpar, energy.Mean, energy.Sigma);
+	fprintf(integral_file, "%lf\t%.10e\t%.10e\n", vpar, energy.Mean, energy.Sigma);
 	
 	for(i=0; i<TMAX+1; i++)
 		fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr, i, NDAT));
 
-	varpar += 0.05;
-} while (varpar<1.0);
+	vpar_old = vpar;
+	vpar = vpar + Dvpar /* DERIVATIVE CALCULATED IN SOME WAY */
+	
+} while (fabs(vpar - vpar_old) > accuracy  && vpar < 1.0);
 
 
 	fclose(therm_file);
@@ -148,11 +155,11 @@ do {
 
 
 double localenergy (double x) {
-	return -2.0*T*exp(varpar) + V*x;
+	return -2.0*T*exp(vpar) + V*x;
 }
 
 double trialWF (double x) {
-	return exp(-varpar*x);
+	return exp(-vpar*x);
 }
 
 double probability (double *x) {
