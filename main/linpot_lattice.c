@@ -46,12 +46,12 @@ int main (int argc, char *argv[]) {
 
 	int NDAT;	/* size of the data sample */
 	int sw, i;
-	double en_sum, site, vpar_old, Dvpar, accuracy, alpha;
+	double en_sum, enld_sum, ld_sum, site, vpar_old, Dvpar, accuracy;
 	double *site_p;
 		site_p = &site;
 
 	/* jackknife structure for the energy estimator */
-	cluster energy;
+	cluster energy, enldcorr, ld;
 
 	/* array needed to compute the autocorrelation */
 	double *autocorr;
@@ -70,11 +70,12 @@ int main (int argc, char *argv[]) {
 		therm_file		= fopen(therm_name, "w");
 		integral_file	= fopen(integral_name, "w");
 		autocorr_file	= fopen(autocorr_name, "w");
-
+	/*
 	printf("\nData will be saved in the following files:\n");
 	printf("\t\"%s\"\t-> estimations of energy;\n", integral_name);
 	printf("\t\"%s\"\t-> values of x at each sweep of the metropolis;\n", therm_name);
 	printf("\t\"%s\"\t-> autocorrelation of data.\n\n", autocorr_name);
+	*/
 			
 	/* Initialization of the randomizer */
 	srand(time(NULL));
@@ -95,55 +96,66 @@ int main (int argc, char *argv[]) {
 	scanf("%lf",&Dvpar);
 
 	NDAT = NSW/NBIN;
-	printf("Number of data points : %d", NDAT);
+	printf("Number of data points : %d \n", NDAT);
 	JKinit(&energy, NDAT);
+	JKinit(&enldcorr, NDAT);
+	JKinit(&ld, NDAT);
 	autocorr = malloc(NSW*sizeof(double));
 
-do {
+	do {
 
-	/* Process is left free for a certain number NTH of sweeps:
-	 * no data are used for estimating the integral
-	 **/
-	for(sw=0; sw<NTH; sw++) {
-		L1metropolis(probability, site_p, delta);
-		site = *site_p;
-//		fprintf(therm_file, "%d\t%.10e\n", sw, site);
-	}
-	
-	/* From now on data are collected and used for the estimation */
-	i=0;
-	en_sum = 0;
-	for(sw=0; sw<NSW; sw++) {
-		L1metropolis(probability, site_p, delta);
-		site = *site_p;
-
-		/* store the value of 'site' to compute the autocorrelation */
-		autocorr[sw] = site;
-		// fprintf(therm_file, "%d\t%.10e\n", sw+NTH, site);
-		en_sum += localenergy(site);
-
-		/* Applying binning method */
-		if((sw+1)%NBIN==0) {
-			energy.Vec[i] = en_sum;
-			en_sum = 0;
-			i++;
+		/* Process is left free for a certain number NTH of sweeps:
+	 	* no data are used for estimating the integral
+	 	**/
+		for(sw=0; sw<NTH; sw++) {
+			L1metropolis(probability, site_p, delta);
+			site = *site_p;
+	//		fprintf(therm_file, "%d\t%.10e\n", sw, site);
 		}
-	}
-			
-	/* Expectation value and variance of the integral are computed
-	 * with the jackknife re-sampling method
-	 **/
-	JKcluster(&energy);
-	fprintf(integral_file, "%lf\t%.10e\t%.10e\n", vpar, energy.Mean, energy.Sigma);
-	
-	for(i=0; i<TMAX+1; i++)
-		fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr, i, NDAT));
+		
+		/* From now on data are collected and used for the estimation */
+		i=0;
+		en_sum = ld_sum = enld_sum = 0;
+		for(sw=0; sw<NSW; sw++) {
+			L1metropolis(probability, site_p, delta);
+			site = *site_p;
 
-	vpar_old = vpar;
-	vpar = vpar + Dvpar /* DERIVATIVE CALCULATED IN SOME WAY */
-	
-} while (fabs(vpar - vpar_old) > accuracy  && vpar < 1.0);
+			/* store the value of 'site' to compute the autocorrelation */
+			autocorr[sw] = site;
+			// fprintf(therm_file, "%d\t%.10e\n", sw+NTH, site);
+			en_sum += localenergy(site)/NBIN;
+			ld_sum += -site/NBIN;
+			enld_sum += -site*localenergy(site)/NBIN;
 
+			/* Applying binning method */
+			if((sw+1)%NBIN==0) {
+				energy.Vec[i] = en_sum;
+				enldcorr.Vec[i] = enld_sum;
+				ld.Vec[i] = ld_sum;
+				en_sum = enld_sum = ld_sum = 0;
+				i++;
+			}
+		}
+				
+		/* Expectation value and variance computed
+	 	* with the jackknife re-sampling method
+	 	**/
+		JKcluster(&energy);
+		JKcluster(&enldcorr);
+		JKcluster(&ld);
+		fprintf(integral_file, "%lf\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n", \
+			vpar, energy.Mean, sqrt(energy.Var), \
+			enldcorr.Mean, sqrt(enldcorr.Var), \
+			ld.Mean, sqrt(ld.Var) );
+		
+		for(i=0; i<TMAX+1; i++)
+			fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr, i, NDAT));
+
+		vpar_old = vpar;
+		vpar = vpar - 2.0*Dvpar*(enldcorr.Mean - energy.Mean * ld.Mean);
+		
+	} while (fabs(vpar - vpar_old) > accuracy  && vpar < 1.0);
+	printf("Optimal variational parameter : %lf +- %lf \n\n", vpar, accuracy);
 
 	fclose(therm_file);
 	fclose(autocorr_file);
