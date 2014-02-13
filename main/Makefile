@@ -2,50 +2,51 @@
 #
 #   Makefile to compile and link Fortran and C programs.
 #
-#  "make" compiles and links the specified main programs and modules
+#  "make" compiles and links the specified main programs and modules (in C)
 #  using the specified libraries (if any), and produces the executables;
 #  by default it deletes also object files after producing executables.
+#
+#  "make fp" does the same as "make" for Fortran programs.
 # 
 #  "make clean" removes all files apart from source codes.
 #
 ################################################################################
 
-all: rmxeq cmpcf cmpsc mkxeq rmpmk 
+all: rmxeq cmpcf mkcxeq rmpmk 
 .PHONY: all
 
 SHELL=/bin/bash
 
-#############################  Fortran programs  ###############################
 
-MAIN = lennard-jones
+#################################  C programs  #################################
+
+MAIN = linpot_lattice
 
 
-# requided modules and external routines
+RANDOM = ranlxs  ranlxd  gauss  ranluxf
 
-GLOBAL = kind  constants
-
-ODE = numerov
-
-SIMULATIONS = ljmod  ljmetropolis
-
-RANDOM = 
+SIMULATIONS = metropolis
 
 CLUSTER = jackknife
 
-MODULES =   $(GLOBAL) $(CLUSTER) $(RANDOM) $(SIMULATIONS)
-	
-	
-#################################  C programs  #################################
+START = start  utils
 
-CMAIN =
+EXTRA = rintf
 
-CRANDOM = ranlxs  ranlxd  gauss  ranluxf
+MODULES =  $(RANDOM) $(SIMULATIONS) $(CLUSTER) $(START) $(EXTRA)
 
-CSTART = start  utils
 
-CEXTRA = rintf
+#############################  Fortran programs  ###############################
 
-CFILES =  $(CRANDOM) $(CSTART) $(CEXTRA)
+FMAIN = lennard-jones
+
+FGLOBAL = kind  constants
+
+FSIMULATIONS = ljmod  ljmetropolis
+
+FCLUSTER = jackknifef
+
+FMODULES = $(FGLOBAL) $(FCLUSTER) $(FSIMULATIONS)
 
 
 ##############################  set search paths  ##############################
@@ -55,93 +56,105 @@ MDIR = ../modules
 VPATH = $(MDIR)/global:$(MDIR)/cluster:$(MDIR)/simulations:$(MDIR)/start:\
 	$(MDIR)/random:$(MDIR)/extras
 
-# additional include directories
-INCPATH = /usr/include
-
-# additional libraries to be included 
-LIBPATH = /usr/local/lib
-
 
 ###############################  for C programs  ###############################
 
-CINCPATH = ../include  /usr/include
+INCPATH = ../include  /usr/include
+
+LIBPATH = /usr/local/lib /usr/lib
 
 CC = gcc
 
-CFLAGS = -Wall -O -std=gnu99 -g -DSSE2
+FLAGS = -Wall -O -std=gnu99 -g -DSSE2
 
-CLIBS = m
+LIBS = m
 
-CINCDIRS = $(addprefix -I,$(CINCPATH))
+PROGRAMS = $(MODULES) $(MAIN)
 
-CLDFLAGS = $(addprefix -L,$(LIBPATH)) $(addprefix -l,$(CLIBS))
+OBJECTS = $(addsuffix .o,$(MODULES))
 
--include $(addsuffix .d,$(CFILES))
+INCDIRS = $(addprefix -I,$(INCPATH))
+
+LDFLAGS = $(addprefix -L,$(LIBPATH)) $(addprefix -l,$(LIBS))
+
+-include $(addsuffix .d,$(PROGRAMS))
 
 
 # rule to make dependencies
-$(addsuffix .d,$(CFILES)): %.d: %.c Makefile
-	@ $(CC) -MM -ansi $(CINCDIRS) $< -o $@
+$(addsuffix .d,$(PROGRAMS)): %.d: %.c Makefile
+	@ $(CC) -MM -ansi $(INCDIRS) $< -o $@
 
 
 # rule to compile source programs
-$(addsuffix .o,$(CFILES)): %.o: %.c Makefile
-	@ $(CC) $< -c $(CFLAGS) $(CINCDIRS) -o $@
+$(addsuffix .o,$(PROGRAMS)): %.o: %.c Makefile
+	@ $(CC) $< -c $(FLAGS) $(INCDIRS) -o $@
+
+
+$(MAIN): %: %.o $(OBJECTS) Makefile
+	@ $(CC) $< $(OBJECTS) $(CFLAGS) $(LDFLAGS) -o $@
 
 
 ############################  for Fortran programs  ############################
+
+FINCPATH = /usr/include ../include
+
+FLIBPATH = /usr/local/lib
 
 FC = gfortran
 
 FCFLAGS = -C -g3 -fbacktrace -O3 -fbounds-check -Wall -Wextra
 
-LIBS = lapack  blas
+FLIBS = lapack  blas
 
-PROGRAMS = $(MODULES) $(MAIN)
+FPROGRAMS = $(FMODULES) $(FMAIN)
 
-INCDIRS = $(addprefix -I,$(INCPATH))
+FINCDIRS = $(addprefix -I,$(FINCPATH))
 
-OBJECTS = $(addsuffix .o,$(MODULES)) $(addsuffix .o,$(CFILES))
+FOBJECTS = $(addsuffix .o,$(FMODULES)) $(addsuffix .o,$(MODULES))
 
-LDFLAGS = $(addprefix -L,$(LIBPATH)) $(addprefix -l,$(LIBS))
+FLDFLAGS = $(addprefix -L,$(FLIBPATH)) $(addprefix -l,$(FLIBS))
 
 
 # compile source programs
-$(addsuffix .o,$(PROGRAMS)): %.o: %.f90 Makefile
-	@ $(FC) $(LDFLAGS) $(FCFLAGS) $(INCDIRS) -c $<
+$(addsuffix .o,$(FPROGRAMS)): %.o: %.f90 Makefile
+	@ $(FC) $(FLDFLAGS) $(FCFLAGS) $(FINCDIRS) -c $<
 
 # link object files and produce executables
-$(MAIN): %: %.o $(OBJECTS)
-	@ $(FC) $(FCFLAGS) $(LDFLAGS) -o $@ $^
+$(FMAIN): %: %.o $(FOBJECTS)
+	@ $(FC) $(FCFLAGS) $(FLDFLAGS) -o $@ $^
 
 
 ############################  List of instructions  ############################
 
 # remove old executables and old error log file
 rmxeq:
-	@ -rm -f $(MAIN); \
+	@ -rm -f $(MAIN) $(FMAIN); \
         echo "  delete old executables"
 
 
-# produce executables
-cmpcf: $(addsuffix .o,$(CFILES))
+cmpcf: $(addsuffix .o,$(PROGRAMS))
 
-cmpsc: $(addsuffix .o,$(PROGRAMS))
+cmpff: $(addsuffix .o,$(FPROGRAMS))
 
-mkxeq: $(MAIN)
-	@ echo "  link object files and produce executables"
+mkcxeq: $(MAIN)
+	@ echo "  link object files and produce executables (C source codes)"
 
+mkfxeq: $(FMAIN)
+	@ echo "  link object files and produce executables (Fortran source codes)"
 
-# clean directory
+# remove files except for executables and .mod
 rmpmk:
 	@ -rm -rf *.d *.o .tmp; \
 		echo -e "  delete object and temporary files\n\n\t\tSTAY BOMBER!\n"
 
+# clean the main directory
 .PHONY: clean
-
 clean: rmpmk
-	@ rm -f *.mod *.MOD *~ $(PROGRAMS); \
+	@ rm -f *.mod *.MOD *~ $(PROGRAMS) $(FPROGRAMS); \
 		echo "  main directory cleaned"
 
+# compile only Fortran programs
+.PHONY: fp
+fp: rmxeq cmpff mkfxeq rmpmk
 
 ################################################################################
