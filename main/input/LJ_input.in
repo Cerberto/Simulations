@@ -1,14 +1,15 @@
 100     # N
 
-10000   # nth
-100000  # nsw
-100     # skip / nbin
-50      # tmax
+30000    # nth
+1000000  # nsw
+1000     # skip / nbin
+50       # tmax
 
 0.5     # rho  
 0.2     # delta
 1.0     # eps
 0.5     # sigma
 0.5     # beta
-10.0    # pressure
-0.005   # deltaL / L max
+1.1     # pressure
+0.05    # deltaL / L max
+0.3     # delta pressure

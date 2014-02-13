@@ -206,7 +206,7 @@ contains
             poten = t1
             delta = delta*s
             !thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
-            thmetropolis_p_alt = thmetropolis_p_alt + 1.d0
+            !thmetropolis_p_alt = thmetropolis_p_alt + 1.d0
         end if
         
         !
@@ -231,6 +231,7 @@ contains
                 ptcls(k)%pstn = pstn_new
                 poten = poten + t1
                 !thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/(N+1)
+                thmetropolis_p_alt = thmetropolis_p_alt + 1.d0/N
             end if
         end do
         

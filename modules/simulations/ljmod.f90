@@ -56,8 +56,9 @@ contains
         temp = N**(1/3.0)
         npsd = int(temp)+1
         lspc = side/npsd
-        write (6,*) "Initial side    = ", side
-        write (6,*) "Lattice spacing = ", lspc
+        !write (6,*) "Initial side    = ", side
+        !write (6,*) "Lattice spacing = ", lspc
+        !write (6,*) "Cutoff radius   = ", rcutoff
         
         
         ! initialization of particles inside a cubic box centered in 0:

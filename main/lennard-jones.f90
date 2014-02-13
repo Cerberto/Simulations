@@ -23,11 +23,11 @@ program LJ
     implicit none
     
     
-    type(JK) :: p_en, cv
-    real(dp), dimension(:), allocatable :: p_en_array, cv_array
+    type(JK) :: p_en, cv, vol
+    real(dp), dimension(:), allocatable :: p_en_array, cv_array, vol_array
 
-    real(dp) :: sum_p_en, sum_cv, acpt_rate
-    integer :: sw, i, counter
+    real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress
+    integer :: sw, tmax, i, counter
     
     open (unit=8, file='output/particle_init.dat', status='replace', &
         action='write')
@@ -35,8 +35,7 @@ program LJ
         action='write')
     open (unit=10, file='output/potential.dat', status='replace', &
         action='write')
-    open(unit=12, file='output/X_vs_p.dat', access='append', &
-        action='write')
+    open(unit=12, file='output/X_vs_p.dat', access='append', action='write')
     
     call rlxdinit(1,rand(time()))
     
@@ -50,23 +49,34 @@ program LJ
     ndat = nsw/nbin
 
     read *, rho
-    read *, delta
+    read *, deltainit
     read *, eps
     read *, sigma
     read *, beta
     read *, press
     read *, dv
+    read *, deltapress
     
-    acpt_rate = 0
-    side    = (N/rho)**(1/3.0)
-    rcutoff = side/2.d0
+    write (10,*) '# Potential during thermalization process '
+    write (10,*) '# p     =', press
+    write (10,*) '# delta =', deltainit
+    write (10,*) '# dv    =', dv
     
     allocate(ptcls(N))
     allocate(p_en_array(ndat))
     allocate(cv_array(ndat))
+    allocate(vol_array(ndat))
     call JK_init (p_en,ndat)
     call JK_init (cv,ndat)
+    call JK_init (vol,ndat)
     
+! DO LOOP ON PRESSURE
+!do while (press <= 3.d0)
+    
+    delta = deltainit
+    side    = (N/rho)**(1/3.0)
+    rcutoff = side/2.d0
+    write (6,*) 'Pressure = ', press
     call particle_init(ptcls)
     
     !
@@ -88,7 +98,7 @@ program LJ
             write (10,*) sw, poten
         end if
     end do
-    write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
+    !write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
     
     !
     !   Print position of particles assumed thermalized
@@ -99,38 +109,40 @@ program LJ
     call flush (9)
     close (unit=9)
     
-    stop
-    
     counter = 1
     acpt_rate = 0
     sum_cv = 0
     sum_p_en = 0
-    do sw=1, nsw, 1
+    sum_vol = 0
+    
+    do sw=1, nsw
         acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nsw
         
         sum_p_en = sum_p_en + poten/nbin
         sum_cv = sum_cv + poten**2/nbin
+        sum_vol = sum_vol + side**3/nbin
         if (mod(sw,nbin) == 0) then
-            write (10,*) (sw+nth)/nbin, poten
+        !    write (10,*) (sw+nth)/nbin, poten
             p_en_array(counter) = sum_p_en
             sum_p_en = 0
             cv_array(counter) = sum_cv
             sum_cv = 0
+            vol_array(counter) = sum_vol
+            sum_vol = 0
             counter = counter + 1
         end if
-        if (mod(sw,10*nbin) == 0) then
-            print *, sw
-        endif
     end do
-    write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
+    !write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
     call flush (10)
     close (10)
     
     !
-    ! Compute mean and variance (of the mean) of the potential energy
+    ! Compute mean and variance (of the mean) of potential energy and volume
     !
     p_en%vec = p_en_array
     call JK_cluster (p_en)
+    vol%vec = vol_array
+    call JK_cluster (vol)
     
     !
     ! Compute mean and variance (of the mean) of the specific heat
@@ -143,7 +155,17 @@ program LJ
     
     write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
     write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
+    write (6,*) 'Volume                  :', vol%mean, '+-', sqrt(vol%var)
+    write (6,*) ' '
     
+    write (12,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
+                        cv%mean/N, sqrt(cv%var)/N, &
+                        vol%mean, sqrt(vol%var)
+    call flush (12)
+    
+    press = press + deltapress
+    
+!end do
     
     close (12)
 
