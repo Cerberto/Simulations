@@ -46,7 +46,7 @@ int main (int argc, char *argv[]) {
 
 	int NDAT;	/* size of the data sample */
 	int sw, i;
-	double en_sum, enld_sum, ld_sum, site, vpar_old, Dvpar, accuracy;
+	double en_sum, enld_sum, ld_sum, site, vpar_init, vpar_old, Dvpar, accuracy;
 	double *site_p;
 		site_p = &site;
 
@@ -57,25 +57,22 @@ int main (int argc, char *argv[]) {
 	double *autocorr;
 	
 	/* Name of the output files */
-	char *therm_name, *integral_name, *autocorr_name;
+	char *therm_name, *integral_name, *autocorr_name, *distrib_name;
 		therm_name		= malloc(100*sizeof(char));
 		integral_name	= malloc(100*sizeof(char));
 		autocorr_name	= malloc(100*sizeof(char));
+		distrib_name	= malloc(100*sizeof(char));
 	sprintf(therm_name, "lp_output/thermalization.dat");
 	sprintf(integral_name, "lp_output/expectationvalues.dat");
 	sprintf(autocorr_name, "lp_output/autocorrelation.dat");
+	sprintf(distrib_name, "lp_output/distribution.dat");
 	
 	/* Output streams */
-	FILE *therm_file, *integral_file, *autocorr_file;
+	FILE *therm_file, *integral_file, *autocorr_file, *distrib_file;
 		therm_file		= fopen(therm_name, "w");
 		integral_file	= fopen(integral_name, "w");
 		autocorr_file	= fopen(autocorr_name, "w");
-	/*
-	printf("\nData will be saved in the following files:\n");
-	printf("\t\"%s\"\t-> estimations of energy;\n", integral_name);
-	printf("\t\"%s\"\t-> values of x at each sweep of the metropolis;\n", therm_name);
-	printf("\t\"%s\"\t-> autocorrelation of data.\n\n", autocorr_name);
-	*/
+		distrib_file	= fopen(distrib_name, "w");
 			
 	/* Initialization of the randomizer */
 	srand(time(NULL));
@@ -91,17 +88,19 @@ int main (int argc, char *argv[]) {
 	scanf("%lf",&site);
 	scanf("%lf",&T);
 	scanf("%lf",&V);
-	scanf("%lf",&vpar);
+	scanf("%lf",&vpar_init);
 	scanf("%lf",&accuracy);
 	scanf("%lf",&Dvpar);
 
 	NDAT = NSW/NBIN;
-	printf("Number of data points : %d \n", NDAT);
+	printf("Number of lattice sites : %d \n", (int)L);
+	printf("Number of data points   : %d \n", NDAT);
 	JKinit(&energy, NDAT);
 	JKinit(&enldcorr, NDAT);
 	JKinit(&ld, NDAT);
 	autocorr = malloc(NSW*sizeof(double));
 
+	vpar = vpar_init;
 	do {
 
 		/* Process is left free for a certain number NTH of sweeps:
@@ -110,7 +109,7 @@ int main (int argc, char *argv[]) {
 		for(sw=0; sw<NTH; sw++) {
 			L1metropolis(probability, site_p, delta);
 			site = *site_p;
-	//		fprintf(therm_file, "%d\t%.10e\n", sw, site);
+			fprintf(therm_file, "%d\t%3.1lf\n", sw, site);
 		}
 		
 		/* From now on data are collected and used for the estimation */
@@ -120,9 +119,12 @@ int main (int argc, char *argv[]) {
 			L1metropolis(probability, site_p, delta);
 			site = *site_p;
 
+			/* Print site to see the distribution */
+			if (vpar == vpar_init)
+				fprintf(distrib_file, "%3.1lf\n", site);
+
 			/* store the value of 'site' to compute the autocorrelation */
 			autocorr[sw] = site;
-			// fprintf(therm_file, "%d\t%.10e\n", sw+NTH, site);
 			en_sum += localenergy(site)/NBIN;
 			ld_sum += -site/NBIN;
 			enld_sum += -site*localenergy(site)/NBIN;
@@ -147,14 +149,16 @@ int main (int argc, char *argv[]) {
 			vpar, energy.Mean, sqrt(energy.Var), \
 			enldcorr.Mean, sqrt(enldcorr.Var), \
 			ld.Mean, sqrt(ld.Var) );
-		
-		for(i=0; i<TMAX+1; i++)
-			fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr, i, NDAT));
 
 		vpar_old = vpar;
-		vpar = vpar - 2.0*Dvpar*(enldcorr.Mean - energy.Mean * ld.Mean);
+		/* New variational parameter calculated via Steepest Descent */
+		vpar = vpar - Dvpar*2.0*(enldcorr.Mean - energy.Mean * ld.Mean);
+		// vpar = vpar + Dvpar;
 		
-	} while (fabs(vpar - vpar_old) > accuracy  && vpar < 1.0);
+	} while (fabs(vpar - vpar_old) > accuracy  && vpar < 2.0);
+
+	for(i=0; i<TMAX+1; i++)
+		fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr, i, NDAT));
 	printf("Optimal variational parameter : %lf +- %lf \n\n", vpar, accuracy);
 
 	fclose(therm_file);
