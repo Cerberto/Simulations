@@ -3,14 +3,20 @@
  * 
  * 		File "jackknife.c"
  * 
- * File contenente le definizioni delle routines necessarie per la manipolazione
- * di cluster jackknife.
+ * File containing routines useful to handle cluster jackknife to compute
+ * averages and variances of primary and secondary random variables
  * 
- * Le routines sono:
- * _ cluster_init -> inizializzazione di un cluster jackknife;
+ * Routines are:
+ * _ JKinit -> initialization of a cluster jackknife;
  * 
- * _ clusterJK -> assegnamento di media e varianza della media nel cluster
- * 		jackknife passato ad argomento.
+ * _ JKcluster -> assignment of mean and variance (of the mean) of the sample
+ *		stored in the array contained in the cluster.
+ *
+ * _ JKfunction -> returns a cluster jackknife with samples, mean and variance
+ *		(of the mean) of a secondary random variable defined as a function
+ *		(passed as argument) of several primary random variables.
+ *		For the sake of generality this routine requires a POINTER to an ARRAY
+ *		of jackknife clusters as argument.
  * 
  ******************************************************************************/
 
@@ -54,21 +60,29 @@ void JKinit (cluster *C, int dim)
 
 
 /* Compute the JK of a secondary random variable */
-cluster JKfunction (double (*f)(double), cluster *X)
+cluster JKfunction (double (*f)(double *), int narg, cluster *X)
 {
-	int i;
+	int i, j;
 	double temp = 0;
-	int dim = X->Dim;
+	double *args;
+
 	cluster result;
+	int dim = X->Dim;
 	JKinit(&result,dim);
-	result.Mean = f(X->Mean);
-	for(i=0; i<dim; i++)
-	{
-		result.Vec[i] = f(X->Vec[i]);
+
+	args = malloc(narg*sizeof(double));
+	for (j=0; j<narg; j++)
+		args[j] = X[j].Mean;
+	result.Mean = f(args);
+	for(i=0; i<dim; i++) {
+		for (j=0; j<narg; j++)
+			args[j] = X[j].Vec[i];
+		result.Vec[i] = f(args);
 		temp += (result.Vec[i] - result.Mean)*(result.Vec[i] - result.Mean);
 		temp *= ((double)(dim - 1)/(double)dim);
 	}
 	result.Var = temp;
+	free(args);
 	
 	return result;
 }
