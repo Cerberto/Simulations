@@ -20,7 +20,7 @@ SHELL=/bin/bash
 
 #################################  C programs  #################################
 
-MAIN = linpot_lattice
+MAIN = linpot_lattice  varmin
 
 
 RANDOM = ranlxs  ranlxd  gauss  ranluxf
@@ -31,9 +31,9 @@ CLUSTER = jackknife
 
 START = start  utils
 
-EXTRA = rintf
+EXTRAS = rintf  zeros
 
-MODULES =  $(RANDOM) $(SIMULATIONS) $(CLUSTER) $(START) $(EXTRA)
+MODULES =  $(RANDOM) $(SIMULATIONS) $(CLUSTER) $(START) $(EXTRAS)
 
 
 #############################  Fortran programs  ###############################

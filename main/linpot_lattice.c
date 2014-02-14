@@ -155,10 +155,10 @@ int main (int argc, char *argv[]) {
 			fprintf(integral_file, "%lf\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n", \
 				vpar, energy.Mean, sqrt(energy.Var), \
 				enldcorr.Mean, sqrt(enldcorr.Var), \
-				ld.Mean, sqrt(ld.Var) );
+				ld.Mean, sqrt(ld.Var));
 		
 		/* New variational parameter calculated via Steepest Descent */
-		vpar = vpar - Dvpar*2.0*(enldcorr.Mean - energy.Mean * ld.Mean - 2*T);
+		vpar = vpar - Dvpar*2.0*(enldcorr.Mean - energy.Mean * ld.Mean);
 		fprintf(vpar_file, "%d\t%.10e\n", counter, vpar);
 		if (counter >= 0) {
 			vpar_av.Vec[counter] = vpar;
@@ -190,14 +190,14 @@ int main (int argc, char *argv[]) {
 
 
 double localenergy (double x) {
-	return -2.0*T*exp(vpar) + V*x;
+	return -T*(trialWF(x+1.0)+trialWF(x-1.0))/trialWF(x) + V*x;
 }
 
 double trialWF (double x) {
-	return exp(-vpar*x);
+	if (x < 0.5 || x > L+.5) return 0;
+	else return exp(-vpar*x);
 }
 
 double probability (double *x) {
-	if (*x < 0.5 || *x > L+.5) return 0;
-	else return trialWF(*x)*trialWF(*x);
+	return trialWF(*x)*trialWF(*x);
 }
