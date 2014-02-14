@@ -5,7 +5,7 @@
  *	on a 1D lattice.
  *	Optimization performed with the steepest descent.
  *
- *******************************************************************************/
+ ******************************************************************************/
 
 #define MAIN_PROGRAM
 
@@ -38,19 +38,20 @@ double L;			/* number of lattice sites */
 double probability (double *x);
 double trialWF (double x);
 double localenergy (double x);
+double ender (double *x);
 
 
 int main (int argc, char *argv[]) {
 
 	int NDAT;	/* size of the data sample */
-	int sw, i, counter;
+	int sw, i, j, counter;
 	double en_sum, enld_sum, ld_sum, en_wsum, en_varsum, \
 		site, vpar_init, Dvpar; // accuracy;
 	double *site_p;
 		site_p = &site;
 
 	/* jackknife structure for the energy estimator */
-	cluster energy, enldcorr, ld, vpar_av;
+	cluster vpar_av, *corr;
 
 	/* array needed to compute the autocorrelation */
 	double *autocorr;
@@ -94,16 +95,15 @@ int main (int argc, char *argv[]) {
 	scanf("%lf",&V);
 	scanf("%lf",&vpar_init);
 	scanf("%lf",&Dvpar);
-	// scanf("%lf",&accuracy);
 
 	NDAT = NSW/NBIN;
 	printf("Number of lattice sites : %d \n", (int)L);
 	printf("Number of data points   : %d \n", NDAT);
-	JKinit(&energy, NDAT);
-	JKinit(&enldcorr, NDAT);
-	JKinit(&ld, NDAT);
-	JKinit(&vpar_av, NAV);
 	autocorr = malloc(NSW*sizeof(double));
+	corr = malloc(3*sizeof(cluster));
+	for (j=0; j<3; j++)
+		JKinit(&corr[j], NDAT);
+	JKinit(&vpar_av, NAV);
 
 	vpar = vpar_init;
 	en_wsum = en_varsum = 0;
@@ -138,32 +138,32 @@ int main (int argc, char *argv[]) {
 
 			/* Applying binning method */
 			if((sw+1)%NBIN==0) {
-				energy.Vec[i] = en_sum;
-				enldcorr.Vec[i] = enld_sum;
-				ld.Vec[i] = ld_sum;
+				corr[0].Vec[i] = enld_sum;
+				corr[1].Vec[i] = en_sum;
+				corr[2].Vec[i] = ld_sum;
 				en_sum = enld_sum = ld_sum = 0;
 				i++;
 			}
 		}
 				
 		/* Average and variance calculated with the jackknife re-sampling */
-		JKcluster(&energy);
-		JKcluster(&enldcorr);
-		JKcluster(&ld);
+		JKcluster(&corr[0]);	/* covariance energy-logarithmic derivative */
+		JKcluster(&corr[1]);	/* energy */
+		JKcluster(&corr[2]);	/* logarithmic derivative */
 
+		/* Print energy mean and variance on file */
 		if (counter < 0)
-			fprintf(integral_file, "%lf\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n", \
-				vpar, energy.Mean, sqrt(energy.Var), \
-				enldcorr.Mean, sqrt(enldcorr.Var), \
-				ld.Mean, sqrt(ld.Var));
+			fprintf(integral_file, "%lf\t%.10e\t%.10e\n", \
+				vpar, corr[1].Mean, sqrt(corr[1].Var));
 		
+
 		/* New variational parameter calculated via Steepest Descent */
-		vpar = vpar - Dvpar*2.0*(enldcorr.Mean - energy.Mean * ld.Mean);
+		vpar = vpar - Dvpar*2.0*(corr[0].Mean - corr[1].Mean*corr[2].Mean);
 		fprintf(vpar_file, "%d\t%.10e\n", counter, vpar);
 		if (counter >= 0) {
 			vpar_av.Vec[counter] = vpar;
-			en_wsum		+= energy.Mean/energy.Var;
-			en_varsum 	+= 1.0/energy.Var;
+			en_wsum		+= corr[1].Mean/corr[1].Var;
+			en_varsum 	+= 1.0/corr[1].Var;
 		}
 	}
 
@@ -178,7 +178,7 @@ int main (int argc, char *argv[]) {
 
 	/* Print the autocorrelation of the process 'site' for the initial vpar */
 	for(i=0; i<TMAX+1; i++)
-		fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr, i, NDAT));
+		fprintf(autocorr_file, "%d\t%e\n", i, autocorrelation(autocorr,i,NDAT));
 
 	fclose(therm_file);
 	fclose(autocorr_file);
@@ -189,12 +189,16 @@ int main (int argc, char *argv[]) {
 }
 
 
+double ender (double *x) {
+	return 2.0*(x[0] - x[1]*x[2]);
+}
+
 double localenergy (double x) {
 	return -T*(trialWF(x+1.0)+trialWF(x-1.0))/trialWF(x) + V*x;
 }
 
 double trialWF (double x) {
-	if (x < 0.5 || x > L+.5) return 0;
+	if (x < 0.5 || x > L+.5) return 0.;
 	else return exp(-vpar*x);
 }
 
