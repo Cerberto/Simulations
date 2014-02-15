@@ -20,7 +20,7 @@ SHELL=/bin/bash
 
 #################################  C programs  #################################
 
-MAIN = linpot_lattice  varmin
+MAIN = linpot_lattice  linpot_lattice_bf  varmin
 
 
 RANDOM = ranlxs  ranlxd  gauss  ranluxf
