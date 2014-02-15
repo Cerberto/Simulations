@@ -38,14 +38,14 @@ double L;			/* number of lattice sites */
 double probability (double *x);
 double trialWF (double x);
 double localenergy (double x);
-double ender (double *x);
+//double ender (double *x);
 
 
 int main (int argc, char *argv[]) {
 
 	int NDAT;	/* size of the data sample */
 	int sw, i, j, counter;
-	double en_sum, enld_sum, ld_sum, en_wsum, en_varsum, \
+	double en_sum, enld_sum, ld_sum, en_wsum, en_varsum, en_der, \
 		site, vpar_init, Dvpar; // accuracy;
 	double *site_p;
 		site_p = &site;
@@ -158,13 +158,14 @@ int main (int argc, char *argv[]) {
 		
 
 		/* New variational parameter calculated via Steepest Descent */
-		vpar = vpar - Dvpar*2.0*(corr[0].Mean - corr[1].Mean*corr[2].Mean);
-		fprintf(vpar_file, "%d\t%.10e\n", counter, vpar);
+		en_der = 2.0*(corr[0].Mean - corr[1].Mean*corr[2].Mean);
+		fprintf(vpar_file, "%d\t%.10e\t%.10e\n", counter, vpar, en_der);
 		if (counter >= 0) {
 			vpar_av.Vec[counter] = vpar;
 			en_wsum		+= corr[1].Mean/corr[1].Var;
 			en_varsum 	+= 1.0/corr[1].Var;
 		}
+		vpar = vpar - Dvpar*en_der;
 	}
 
 	/* Calculate the mean variational parameter and its variance */
@@ -188,10 +189,11 @@ int main (int argc, char *argv[]) {
 	exit(EXIT_SUCCESS);
 }
 
-
+/*
 double ender (double *x) {
 	return 2.0*(x[0] - x[1]*x[2]);
 }
+*/
 
 double localenergy (double x) {
 	return -T*(trialWF(x+1.0)+trialWF(x-1.0))/trialWF(x) + V*x;

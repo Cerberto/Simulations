@@ -8,14 +8,14 @@ typedef struct
 	double *Vec;	/* Array of data */
 	int Dim;		/* Array length */
 	double Mean;	/* Mean value on the array */
-	double Var;	/* Variance of the mean */
+	double Var;		/* Variance of the mean */
 } cluster;
 
 
 #ifndef JACKKNIFE_C
 extern void JKcluster(cluster *C);
 extern void JKinit(cluster *C, int dim);
-extern cluster JKfunction (double (*f)(double), cluster *X);
+extern cluster JKfunction (double (*f)(double *), int narg, cluster *X);
 #endif
 
 #endif
