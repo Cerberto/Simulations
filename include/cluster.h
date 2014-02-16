@@ -16,6 +16,7 @@ typedef struct
 extern void JKcluster(cluster *C);
 extern void JKinit(cluster *C, int dim);
 extern cluster JKfunction (double (*f)(double *), int narg, cluster *X);
+extern void JKdelete (cluster *C);
 #endif
 
 #endif

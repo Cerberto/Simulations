@@ -60,8 +60,7 @@ void JKinit (cluster *C, int dim)
 
 
 /* Compute the JK of a secondary random variable */
-cluster JKfunction (double (*f)(double *), int narg, cluster *X)
-{
+cluster JKfunction (double (*f)(double *), int narg, cluster *X) {
 	int i, j;
 	double temp = 0;
 	double *args;
@@ -85,4 +84,12 @@ cluster JKfunction (double (*f)(double *), int narg, cluster *X)
 	free(args);
 	
 	return result;
+}
+
+
+void JKdelete (cluster *X) {
+	free (&(X->Dim));
+	free (&(X->Mean));
+	free (&(X->Var));
+	free (X->Vec);
 }
