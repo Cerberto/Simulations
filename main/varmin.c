@@ -11,6 +11,7 @@ double V;
 
 double func (double x);
 double envar (double x);
+void plot_envar ();
 
 int main (int argc, char *argv[]) {
 	
@@ -19,12 +20,14 @@ int main (int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	double extremes[2], result;
+	double result, extremes[2];
 
 	extremes[0] = atof(argv[1]);
 	extremes[1] = atof(argv[2]);
 	T = atof(argv[3]);
 	V = atof(argv[4]);
+
+	plot_envar(extremes[0], extremes[1]);
 
 	Zbisection(func, extremes, 1.0e-4);
 	result = Zsecant(func, extremes, 1.0e-8);
@@ -41,4 +44,15 @@ double func (double x) {
 
 double envar (double x) {
 	return -2*T*cosh(x) + V/(1.0 - exp(-2.0*x));
+}
+
+
+void plot_envar (double min, double max) {
+	double x, dx;
+	dx = (max - min)/100.0;
+	FILE *out;
+		out = fopen("lp_output/analytic.dat","w");
+	for (x=min; x<max; x+=dx)
+		fprintf(out,"%lf\t%lf\n", x, envar(x));
+	fclose(out);
 }

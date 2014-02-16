@@ -10,13 +10,16 @@
  * _ JKinit -> initialization of a cluster jackknife;
  * 
  * _ JKcluster -> assignment of mean and variance (of the mean) of the sample
- *		stored in the array contained in the cluster.
+ *		stored in the array contained in the cluster;
  *
  * _ JKfunction -> returns a cluster jackknife with samples, mean and variance
  *		(of the mean) of a secondary random variable defined as a function
  *		(passed as argument) of several primary random variables.
  *		For the sake of generality this routine requires a POINTER to an ARRAY
- *		of jackknife clusters as argument.
+ *		of jackknife clusters as argument;
+ *
+ * _ JKdelete -> frees the memory area occupied by a cluster jackknife (passed
+ *		as argument).
  * 
  ******************************************************************************/
 
@@ -87,9 +90,7 @@ cluster JKfunction (double (*f)(double *), int narg, cluster *X) {
 }
 
 
+/* Cluster jackknife deletion */
 void JKdelete (cluster *X) {
-	free (&(X->Dim));
-	free (&(X->Mean));
-	free (&(X->Var));
 	free (X->Vec);
 }

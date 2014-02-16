@@ -44,14 +44,14 @@ double localenergy (double x);
 int main (int argc, char *argv[]) {
 
 	int NDAT;	/* size of the data sample */
-	int sw, i, j, counter;
-	double en_sum, enld_sum, ld_sum, en_wsum, en_varsum, en_der, \
-		site, vpar_init, Dvpar; // accuracy;
+	int sw, i, counter;
+	double en_sum, enld_sum, ld_sum, en_wsum, en_varsum, \
+		site, vpar_init, delta_init, Dvpar, acptrate, check;
 	double *site_p;
 		site_p = &site;
 
 	/* jackknife structure for the energy estimator */
-	cluster vpar_av, *corr;
+	cluster vpar_av, enld, en, ld, ender;
 
 	/* array needed to compute the autocorrelation */
 	double *autocorr;
@@ -88,7 +88,7 @@ int main (int argc, char *argv[]) {
 	scanf("%d",&NCONV);
 	scanf("%d",&NAV);
 		
-	scanf("%lf",&delta);
+	scanf("%lf",&delta_init);
 	scanf("%lf",&L);
 	scanf("%lf",&site);
 	scanf("%lf",&T);
@@ -100,29 +100,33 @@ int main (int argc, char *argv[]) {
 	printf("Number of lattice sites : %d \n", (int)L);
 	printf("Number of data points   : %d \n", NDAT);
 	autocorr = malloc(NSW*sizeof(double));
-	corr = malloc(3*sizeof(cluster));
-	for (j=0; j<3; j++)
-		JKinit(&corr[j], NDAT);
+	JKinit(&enld, NDAT);
+	JKinit(&en, NDAT);
+	JKinit(&ld, NDAT);
 	JKinit(&vpar_av, NAV);
 
 	vpar = vpar_init;
 	en_wsum = en_varsum = 0;
 	for(counter=-NCONV; counter<NAV; counter++) {
+		delta = 3.0/vpar;
 
 		/* Process is left free for a certain number NTH of sweeps:
 	 	* no data are used for estimating the integral
 	 	**/
-		for(sw=0; sw<NTH; sw++) {
-			L1metropolis(probability, site_p, delta);
+	 	acptrate = 0;
+		for (sw=0; sw<NTH; sw++) {
+			acptrate += L1metropolis (probability, site_p, delta)/NTH;
 			site = *site_p;
 			fprintf(therm_file, "%d\t%3.1lf\n", sw, site);
 		}
+		printf("Acceptance rate in thermalization : %lf\n", acptrate);
 		
 		/* From now on data are collected and used for the estimation */
 		i=0;
 		en_sum = ld_sum = enld_sum = 0;
+		acptrate = 0;
 		for(sw=0; sw<NSW; sw++) {
-			L1metropolis(probability, site_p, delta);
+			acptrate += L1metropolis (probability, site_p, delta)/NSW;
 			site = *site_p;
 
 			/* Print site to see the distribution */
@@ -132,40 +136,61 @@ int main (int argc, char *argv[]) {
 				autocorr[sw] = site;
 			}
 
-			en_sum += localenergy(site)/NBIN;
-			ld_sum += -site/NBIN;
+			en_sum   += localenergy(site)/NBIN;
+			ld_sum   += -site/NBIN;
 			enld_sum += -site*localenergy(site)/NBIN;
 
 			/* Applying binning method */
 			if((sw+1)%NBIN==0) {
-				corr[0].Vec[i] = enld_sum;
-				corr[1].Vec[i] = en_sum;
-				corr[2].Vec[i] = ld_sum;
+				enld.Vec[i] = enld_sum;
+				en.Vec[i] = en_sum;
+				ld.Vec[i] = ld_sum;
 				en_sum = enld_sum = ld_sum = 0;
 				i++;
 			}
 		}
-				
-		/* Average and variance calculated with the jackknife re-sampling */
-		JKcluster(&corr[0]);	/* covariance energy-logarithmic derivative */
-		JKcluster(&corr[1]);	/* energy */
-		JKcluster(&corr[2]);	/* logarithmic derivative */
+		printf("Acceptance rate when thermalized  : %lf\n", acptrate);
 
-		/* Print energy mean and variance on file */
+		/* Average and variance calculated with the jackknife re-sampling */
+		JKcluster(&enld);	/* covariance energy-logarithmic derivative */
+		JKcluster(&en);		/* energy */
+		JKcluster(&ld);		/* logarithmic derivative */
+
+		/* Average and variance of the variational energy derivative */
+		ender = energy_derivative (&enld, &en, &ld);
+
+		/* Print mean and variance of energy and its derivative on file */
 		if (counter < 0)
-			fprintf(integral_file, "%lf\t%.10e\t%.10e\n", \
-				vpar, corr[1].Mean, sqrt(corr[1].Var));
-		
+			fprintf(integral_file, "%lf\t%.10e\t%.10e\t%.10e\t%.10e\n", \
+				vpar, en.Mean, sqrt(en.Var), ender.Mean, sqrt(ender.Var));
+
+	/***************************************************************************
+	 * CHECK IF 'energy_derivative' WORKS
+	 */
+		for (i=0; i<NDAT; i++) {
+			enld_sum += enld.Vec[i]/NDAT;
+			en_sum   += en.Vec[i]/NDAT;
+			ld_sum   += ld.Vec[i]/NDAT;
+		}
+		// check = ender.Mean - 2.0*correlation(en.Vec, ld.Vec, NDAT);
+		check = ender.Mean - 2.0*(enld_sum - en_sum*ld_sum);
+		printf("check = %lf,\tenergy derivative = %lf\n", check, ender.Mean);
+		enld_sum = en_sum = ld_sum = 0;
+	/***************************************************************************/
+
 
 		/* New variational parameter calculated via Steepest Descent */
-		en_der = 2.0*(corr[0].Mean - corr[1].Mean*corr[2].Mean);
-		fprintf(vpar_file, "%d\t%.10e\t%.10e\n", counter, vpar, en_der);
+		fprintf(vpar_file, "%d\t%.10e\t%.10e\n", counter, vpar, ender.Mean);
+
+		/* Average over several iterations
+		 * when (assuming to have) converged to the minimum */
 		if (counter >= 0) {
 			vpar_av.Vec[counter] = vpar;
-			en_wsum		+= corr[1].Mean/corr[1].Var;
-			en_varsum 	+= 1.0/corr[1].Var;
+			en_wsum		+= en.Mean/en.Var;
+			en_varsum 	+= 1.0/en.Var;
 		}
-		vpar = vpar - Dvpar*en_der;
+		vpar = vpar - Dvpar*ender.Mean;
+		// vpar = vpar - Dvpar*2.0*correlation(en.Vec, ld.Vec, NDAT);
 	}
 
 	/* Calculate the mean variational parameter and its variance */
@@ -185,24 +210,25 @@ int main (int argc, char *argv[]) {
 	fclose(autocorr_file);
 	fclose(integral_file);
 	free(autocorr);
+	JKdelete(&enld);
+	JKdelete(&en);
+	JKdelete(&ld);
+	JKdelete(&ender);
 	
 	exit(EXIT_SUCCESS);
 }
 
-/*
-double ender (double *x) {
-	return 2.0*(x[0] - x[1]*x[2]);
-}
-*/
 
 double localenergy (double x) {
 	return -T*(trialWF(x+1.0)+trialWF(x-1.0))/trialWF(x) + V*x;
 }
 
+
 double trialWF (double x) {
 	if (x < 0.5 || x > L+.5) return 0.;
 	else return exp(-vpar*x);
 }
+
 
 double probability (double *x) {
 	return trialWF(*x)*trialWF(*x);

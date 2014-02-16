@@ -4,8 +4,8 @@
 # for several values of the variational parameters
 
 $g = 0;
-$gmin	= 0.05;
-$gmax	= 5.8;
+$gmin	= 0.1;
+$gmax	= 1.0;
 $N 		= 50;
 $dg		= ($gmax - $gmin)/$N;
 
@@ -17,7 +17,7 @@ system ("touch", "lp_output/expectationvalues_bf.dat");
 for ($g=$gmin; $g < $gmax; $g+=$dg)
 {
 	# printf "Variational parameter = $g\n";
-	system("./linpot_lattice $g < input/LP_input_bf.in");
+	system("./linpot_lattice_bf $g < input/LP_input_bf.in");
 }
 
 printf "\nEnd!\n\n";
