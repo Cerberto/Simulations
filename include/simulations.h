@@ -17,7 +17,11 @@ extern cluster sqrt_jk (cluster *X);
 extern void cold_init (double *v, int dim);
 extern void hot_init (double *v, int dim);
 extern double metropolis (double (*P)(double *), double *state, int state_dim, double delta);
+#endif
+
+#ifndef ONEDLATTICE_C
 extern double L1metropolis (double (*P)(double *), double *state, double delta);
+extern cluster energy_derivative (cluster *enld, cluster *en, cluster *ld);
 #endif
 
 #ifndef STATISTICS_C

@@ -51,26 +51,3 @@ double metropolis (double (*P)(double *), double *state, int state_dim, double d
 	}
 	return chosen;
 }
-
-
-/* Same as 'metropolis' but configuration space on a 1D lattice */
-double L1metropolis (double (*P)(double *), double *state, double delta) {
-	double swap, x_new, acceptance;
-	double chosen = 0;
-	double u[2];
-
-	ranlxd(u,2);
-	x_new = *state + delta*(2.0*u[0] - 1.0);
-	x_new = rint(x_new);
-	swap = *state;
-	*state = x_new;
-		acceptance = P(state);
-	*state = swap;
-		acceptance /= P(state);
-	
-    if(acceptance >= u[1]) {
-    	*state = x_new;
-    	chosen++;
-	}
-    return chosen;
-}
