@@ -2,17 +2,13 @@
 
 #define METROPOLIS_C
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "simulations.h"
 #include "random.h"
-#include "cluster.h"
-#include "extras.h"
 
 /* Cold initialization */
-void cold_init(double *v, int dim)
-{
+void cold_init(double *v, int dim) {
 	int i;
 	for(i=0; i<dim; i++)
 		v[i] = 0;
@@ -20,8 +16,7 @@ void cold_init(double *v, int dim)
 
 
 /* Hot initialization */
-void hot_init(double *v, int dim)
-{
+void hot_init(double *v, int dim) {
 	int i;
 	double *temp;
 	temp = malloc(dim*sizeof(double));
@@ -33,35 +28,14 @@ void hot_init(double *v, int dim)
 }
 
 
-
-/* Autocorrelation of data in an array */
-double autocorrelation(double *x, int t, int dim)
-{
-	int i;
-	double temp1 = 0;
-	double temp2 = 0;
-	double temp3 = 0;
-
-	for(i=0; i<(dim-t); i++)
-	{
-		temp3 += x[i]*x[i+t]/(double)(dim - t);
-		temp1 += x[i]/(double)(dim - t);
-		temp2 += x[i]*x[i]/(double)(dim - t);
-	}
-
-	return (temp3 - temp1*temp1)/(temp2 - temp1*temp1);
-}
-
-
 /* Routine that executes a sweep of the Metropolis algorithm */
-void metropolis (double (*P)(double *), double *state, int state_dim, double delta)
-{
+double metropolis (double (*P)(double *), double *state, int state_dim, double delta) {
 	int i;
 	double swap, x_new, acceptance;
+	double chosen = 0;
 	double u[2];
 
-	for(i=0; i<state_dim; i++)
-	{
+	for(i=0; i<state_dim; i++) {
 		ranlxd(u,2);
 		x_new = state[i] + delta*(u[0] - 0.5);
 		swap = state[i];
@@ -70,16 +44,19 @@ void metropolis (double (*P)(double *), double *state, int state_dim, double del
 		state[i] = swap;
 			acceptance /= P(state);
 		
-		if(acceptance >= u[1])
+		if(acceptance >= u[1]) {
 			state[i] = x_new;
+			chosen += 1.0/state_dim;
+		}
 	}
+	return chosen;
 }
 
 
 /* Same as 'metropolis' but configuration space on a 1D lattice */
-void L1metropolis (double (*P)(double *), double *state, double delta)
-{
+double L1metropolis (double (*P)(double *), double *state, double delta) {
 	double swap, x_new, acceptance;
+	double chosen = 0;
 	double u[2];
 
 	ranlxd(u,2);
@@ -91,6 +68,9 @@ void L1metropolis (double (*P)(double *), double *state, double delta)
 	*state = swap;
 		acceptance /= P(state);
 	
-    if(acceptance >= u[1])
+    if(acceptance >= u[1]) {
     	*state = x_new;
+    	chosen++;
+	}
+    return chosen;
 }

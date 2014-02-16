@@ -25,7 +25,7 @@ MAIN = linpot_lattice  linpot_lattice_bf  varmin
 
 RANDOM = ranlxs  ranlxd  gauss  ranluxf
 
-SIMULATIONS = metropolis
+SIMULATIONS = metropolis  statistics
 
 CLUSTER = jackknife
 

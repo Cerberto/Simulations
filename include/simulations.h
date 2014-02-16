@@ -7,7 +7,6 @@
 #ifndef HARMOSC_C
 extern double HOmetropolis (double *state, int state_dim);
 extern double HOeAction (double *state, int state_dim);
-/* Pay attention: replace this name to "autocorrelation" in harmosc_metropolis.c */
 extern void HOautocorrelation (double *x, int t, double *v, int x_dim, int steps);
 extern cluster DeltaE (cluster *A, cluster *B, cluster *C);
 extern cluster MatrixElementX (cluster *DE, cluster *Corr, int t, int N);
@@ -15,11 +14,15 @@ extern cluster sqrt_jk (cluster *X);
 #endif
 
 #ifndef METROPOLIS_C
-extern double autocorrelation (double *x, int t, int dim);
 extern void cold_init (double *v, int dim);
 extern void hot_init (double *v, int dim);
-extern void metropolis (double (*P)(double *), double *state, int state_dim, double delta);
-extern void L1metropolis (double (*P)(double *), double *state, double delta);
+extern double metropolis (double (*P)(double *), double *state, int state_dim, double delta);
+extern double L1metropolis (double (*P)(double *), double *state, double delta);
+#endif
+
+#ifndef STATISTICS_C
+extern double autocorrelation (double *x, int t, int dim);
+extern double correlation (double *x, double *y, int dim);
 #endif
 
 #endif
