@@ -1,0 +1,11 @@
+100     # N
+
+30000    # nth
+1000000  # nsw
+1000     # skip / nbin
+50       # tmax
+
+0.5     # rho  
+0.2     # delta
+1.0     # eps
+0.5     # sigma

@@ -29,13 +29,13 @@ program LJ
     real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress
     integer :: sw, tmax, i, counter
     
-    open (unit=8, file='output/particle_init.dat', status='replace', &
+    open (unit=8, file='lj_output/particle_init.dat', status='replace', &
         action='write')
-    open (unit=9, file='output/particle_therm.dat', status='replace', &
+    open (unit=9, file='lj_output/particle_therm.dat', status='replace', &
         action='write')
-    open (unit=10, file='output/potential.dat', status='replace', &
+    open (unit=10, file='lj_output/potential.dat', status='replace', &
         action='write')
-    open(unit=12, file='output/X_vs_p.dat', access='append', action='write')
+    open(unit=12, file='lj_output/X_vs_p.dat', access='append', action='write')
     
     call rlxdinit(1,rand(time()))
     
