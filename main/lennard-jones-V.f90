@@ -26,7 +26,7 @@ program LJ
     type(JK) :: p_en, cv
     real(dp), dimension(:), allocatable :: p_en_array, cv_array
 
-    real(dp) :: sum_p_en, sum_cv, acpt_rate, temperature, tempinit
+    real(dp) :: sum_p_en, sum_cv, acpt_rate, temperature, tempinit, deltatemp
     integer :: sw, tmax, i, counter
     
     ! Positions of particles initialized
@@ -62,6 +62,7 @@ program LJ
     read *, sigma
     ! read *, beta
     read *, tempinit
+    read *, deltatemp
     
     allocate(ptcls(N))
     allocate(p_en_array(ndat))
@@ -69,12 +70,16 @@ program LJ
     call JK_init (p_en,ndat)
     call JK_init (cv,ndat)
     
-! DO LOOP ON TEMPERATURE
 temperature = tempinit
+side    = (N/rho)**(1/3.0)
+! DO LOOP ON TEMPERATURE
 do while (temperature <= 5.d0)
     
-    beta    = 1.d0/temperature
-    side    = (N/rho)**(1/3.0)
+    write (6,*) 'Number of particles     :', N
+    write (6,*) 'Volume                  :', side**(3.d0)
+    write (6,*) 'Temperature             :', temperature
+    
+    beta    = temperature**(-1.0)
     rcutoff = side/2.d0
     call particle_init(ptcls)
     
@@ -93,9 +98,9 @@ do while (temperature <= 5.d0)
     acpt_rate = 0
     do sw=1, nth
         acpt_rate = acpt_rate + thmetropolis_v(ptcls)/nth
-        if (mod(sw,10)==0) then
-            write (10,*) sw, poten
-        end if
+        !if (mod(sw,10)==0) then
+        !    write (10,*) sw, poten
+        !end if
     end do
     write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
     
@@ -105,8 +110,6 @@ do while (temperature <= 5.d0)
     do i=1, N, 1
         write (9,*), ptcls(i)%pstn
     end do
-    call flush (9)
-    close (unit=9)
     
     counter = 1
     acpt_rate = 0
@@ -128,8 +131,6 @@ do while (temperature <= 5.d0)
         end if
     end do
     write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
-    call flush (10)
-    close (10)
     
     !
     ! Compute mean and variance (of the mean) of potential energy
@@ -149,13 +150,17 @@ do while (temperature <= 5.d0)
     write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
     write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
     write (6,*) ' '
+    call flush (6)
     
     write (12,*) temperature, p_en%mean/N, sqrt(p_en%var)/N, &
                               cv%mean/N, sqrt(cv%var)/N
-    !call flush (12)
-    temperature = temperature + 0.d05
+
+    temperature = temperature + deltatemp
 end do
-    
+
+    close (8)
+    close (9)
+    close (10)
     close (12)
 
 end program LJ
