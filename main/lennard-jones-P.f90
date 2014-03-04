@@ -24,36 +24,37 @@ program LJ
     
     
     type(JK) :: p_en, cv, vol
-    real(dp), dimension(:), allocatable :: p_en_array, cv_array, vol_array
-
-    real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress
+    real(dp), dimension(:), allocatable :: p_en_array, vol_array
+    
+    real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress, pressinit, check
     integer :: sw, tmax, i, counter
     
-    open (unit=8, file='lj_output/particle_init.dat', status='replace', &
+    open (unit=8, file='lj_output/P_particle_init.dat', status='replace', &
         action='write')
-    open (unit=9, file='lj_output/particle_therm.dat', status='replace', &
+    open (unit=9, file='lj_output/P_particle_therm.dat', status='replace', &
         action='write')
-    open (unit=10, file='lj_output/potential.dat', status='replace', &
+    open (unit=10, file='lj_output/P_potential.dat', status='replace', &
         action='write')
-    open(unit=12, file='lj_output/X_vs_p.dat', access='append', action='write')
+    open(unit=12, file='lj_output/P_X_vs_p.dat', status='replace', action='write')
+    !open(unit=12, file='lj_output/P_X_vs_p.dat', access='append', action='write')
     
     call rlxdinit(1,rand(time()))
     
     read *, N
-
+    
     read *, nth
     read *, nsw
     read *, nbin
     read *, tmax
     
     ndat = nsw/nbin
-
+    
     read *, rho
     read *, deltainit
     read *, eps
     read *, sigma
     read *, beta
-    read *, press
+    read *, pressinit
     read *, dv
     read *, deltapress
     
@@ -64,19 +65,19 @@ program LJ
     
     allocate(ptcls(N))
     allocate(p_en_array(ndat))
-    allocate(cv_array(ndat))
     allocate(vol_array(ndat))
     call JK_init (p_en,ndat)
     call JK_init (cv,ndat)
     call JK_init (vol,ndat)
     
 ! DO LOOP ON PRESSURE
-!do while (press <= 3.d0)
+press = pressinit
+side    = (N/rho)**(1/3.0)
+check = side
+rcutoff = side/2.d0
+do while (press <= 1.3)
     
     delta = deltainit
-    side    = (N/rho)**(1/3.0)
-    rcutoff = side/2.d0
-    write (6,*) 'Pressure = ', press
     call particle_init(ptcls)
     
     !
@@ -85,8 +86,6 @@ program LJ
     do i=1, N
         write (8,*), ptcls(i)%pstn
     end do
-    call flush(8)
-    close (unit=8)
     
     !
     !   Thermalization
@@ -94,11 +93,11 @@ program LJ
     acpt_rate = 0
     do sw=1, nth
         acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nth
-        if (mod(sw,10)==0) then
-            write (10,*) sw, poten
-        end if
+        !if (mod(sw,10)==0) then
+        !    write (10,*) sw, poten
+        !end if
     end do
-    !write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
+    write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
     
     !
     !   Print position of particles assumed thermalized
@@ -106,15 +105,11 @@ program LJ
     do i=1, N, 1
         write (9,*), ptcls(i)%pstn
     end do
-    call flush (9)
-    close (unit=9)
     
     counter = 1
     acpt_rate = 0
-    sum_cv = 0
     sum_p_en = 0
     sum_vol = 0
-    
     do sw=1, nsw
         acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nsw
         
@@ -123,52 +118,53 @@ program LJ
         sum_vol = sum_vol + side**3/nbin
         if (mod(sw,nbin) == 0) then
         !    write (10,*) (sw+nth)/nbin, poten
-            p_en_array(counter) = sum_p_en
+            p_en%vec(counter) = sum_p_en
             sum_p_en = 0
-            cv_array(counter) = sum_cv
-            sum_cv = 0
-            vol_array(counter) = sum_vol
+            vol%vec(counter) = sum_vol
             sum_vol = 0
             counter = counter + 1
         end if
     end do
-    !write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
-    call flush (10)
-    close (10)
+    write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
     
     !
     ! Compute mean and variance (of the mean) of potential energy and volume
     !
-    p_en%vec = p_en_array
     call JK_cluster (p_en)
-    vol%vec = vol_array
     call JK_cluster (vol)
     
     !
     ! Compute mean and variance (of the mean) of the specific heat
-    !
+    !   
     do counter=1, ndat
-        cv_array(counter) = (beta**2)*(cv_array(counter) - p_en%mean**2)
+        cv%vec(counter) = (beta**2)*(p_en%vec(counter) - p_en%mean)**2
     end do
-    cv%vec = cv_array
     call JK_cluster (cv)
     
+    write (6,*) 'Number of particles     :', N
+    write (6,*) 'Pressure                :', press
+    write (6,*) 'Temperature             :', 1.d0/beta
     write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
     write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
     write (6,*) 'Volume                  :', vol%mean, '+-', sqrt(vol%var)
+    write (6,*) 'Difference between new and original side :', &
+        (vol%mean)**(1.d0/3) - check
     write (6,*) ' '
     
     write (12,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
                         cv%mean/N, sqrt(cv%var)/N, &
                         vol%mean, sqrt(vol%var)
-    call flush (12)
     
     press = press + deltapress
+    call flush (6)
+    call flush (12)
+end do
     
-!end do
-    
+    close (8)
+    close (9)
+    close (10)
     close (12)
-
+    
 end program LJ
 
 !

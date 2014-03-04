@@ -42,8 +42,8 @@ program LJ
         action='write')
         
     ! Energy and cv (with respective errors) vs temperature
-    open(unit=12, file='lj_output/V_X_vs_T.dat', status='replace', action='write')
-    !open(unit=12, file='lj_output/X_vs_T.dat', access='append', action='write')
+    !open(unit=12, file='lj_output/V_X_vs_T.dat', status='replace', action='write')
+    open(unit=12, file='lj_output/V_X_vs_T.dat', access='append', action='write')
     
     call rlxdinit(1,rand(time()))
     
@@ -72,15 +72,15 @@ program LJ
     
 temperature = tempinit
 side    = (N/rho)**(1/3.0)
+rcutoff = side/2.d0
 ! DO LOOP ON TEMPERATURE
-do while (temperature <= 5.d0)
+do while (temperature <= 8.d0)
     
     write (6,*) 'Number of particles     :', N
     write (6,*) 'Volume                  :', side**(3.d0)
     write (6,*) 'Temperature             :', temperature
     
     beta    = temperature**(-1.0)
-    rcutoff = side/2.d0
     call particle_init(ptcls)
     
     !
