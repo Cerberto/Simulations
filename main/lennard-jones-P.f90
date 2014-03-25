@@ -26,7 +26,7 @@ program LJ
     type(JK) :: p_en, cv, vol
     real(dp), dimension(:), allocatable :: p_en_array, vol_array
     
-    real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress, pressinit, check
+    real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress, pressinit
     integer :: sw, tmax, i, counter
     
     open (unit=8, file='lj_output/P_particle_init.dat', status='replace', &
@@ -73,7 +73,6 @@ program LJ
 ! DO LOOP ON PRESSURE
 press = pressinit
 side    = (N/rho)**(1/3.0)
-check = side
 rcutoff = side/2.d0
 do while (press <= 1.3)
     
@@ -147,8 +146,8 @@ do while (press <= 1.3)
     write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
     write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
     write (6,*) 'Volume                  :', vol%mean, '+-', sqrt(vol%var)
-    write (6,*) 'Difference between new and original side :', &
-        (vol%mean)**(1.d0/3) - check
+    write (6,*) '<side>/2 - rcutoff      :', ((vol%mean)**(1.d0/3))/2 - rcutoff
+    write (6,*) '<side> - rcutoff        :', (vol%mean)**(1.d0/3) - rcutoff
     write (6,*) ' '
     
     write (12,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
