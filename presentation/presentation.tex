@@ -1,0 +1,85 @@
+\documentclass[9pt,italian,serif]{beamer}
+
+%\usepackage{mathpazo}
+\usepackage{palatino,eulervm}
+\usepackage{csquotes}
+\usepackage[bibstyle = authoryear,%
+			citestyle = authoryear-comp]{biblatex}
+	\bibliography{/media/DATI/Fisica/references}
+	\setlength\bibitemsep{2\itemsep}
+\setlength{\itemsep}{12pt}
+\linespread{1.6}
+
+
+\usetheme{Boadilla}
+\usecolortheme{beaver}
+\beamertemplatenavigationsymbolsempty	% NESSUN SIMBOLO DI NAVIGAZIONE 
+
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{verbatim, xcolor, etoolbox, transparent}
+\usepackage{graphicx}
+\input{/media/DATI/Fisica/math.tex}
+\renewcommand\mathfamilydefault{\rmdefault}
+
+
+\graphicspath{{immagini/}}
+
+\makeatletter
+	\patchcmd{\beamer@sectionintoc}{\vskip 3em}{\vskip 2em}{}{}
+	\patchcmd{\beamer@subsectionintoc}{\vskip 2em}{\vskip 2em}{}{}
+\makeatother
+
+
+\title[Introduction to the \emph{CP} method]{\LARGE Metropolis algorithm for linear potential on a 1D lattice\\& optimization via steepest descent}
+\author[Alberto Pezzotta]{Alberto Pezzotta}
+\date[]{}
+
+
+% 	COMANDI PERSONALIZZATI
+	\newcommand{\newslide}{\framebreak \newpage}
+	\renewcommand{\emph}{\textsl}
+
+	\definecolor{ou}{RGB}{0,67,0}
+	\definecolor{structbeaver}{RGB}{51,51,179}
+	\definecolor{redbeaver}{RGB}{163,0,0}
+	\definecolor{greybeaver}{RGB}{217,217,217}
+	\newcommand{\ehi}[1]{\begin{center}\begin{Large}\color{structbeaver}{#1}\end{Large}\end{center}}
+	\newcommand{\ou}[1]{\begin{Large}\end{Large}{ou}{#1}\end{Large}}
+
+\begin{document}
+
+	\begin{frame}[plain]
+		\maketitle
+	\end{frame}
+
+
+\section*{}
+\begin{frame}
+	\frametitle{Contents}
+	\tableofcontents %[section=1,hidesubsections,pausesections]
+\end{frame}
+
+%\begin{comment}
+\AtBeginSection[]
+{
+	\frame<handout:0>
+	{
+		\frametitle{Now \ldots}
+		\tableofcontents[currentsection,%sectionstyle=show/hide,subsectionstyle=show/show/hide
+				hideothersubsections]
+	}
+}
+%\end{comment}
+
+	\input{content}
+
+%	\nocite{CP:uamd}
+%	\nocite{PSB:aimdc}
+%	\nocite{RM:mdcpa}
+%	\section*{}
+%	\begin{frame}{Riferimenti bibliografici}
+%		\printbibliography
+%	\end{frame}
+
+\end{document}
