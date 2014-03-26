@@ -69,9 +69,9 @@ int main (int argc, char *argv[]) {
 	scanf("%lf",&site);
 	scanf("%lf",&T);
 	scanf("%lf",&V);
+	scanf("%lf",&delta);
 
 	vpar  = atof(argv[1]);
-	delta = 3.0/vpar;		/* ATTENTION!! */
 
 	NDAT = NSW/NBIN;
 	en_vec   = malloc(NDAT*sizeof(double));

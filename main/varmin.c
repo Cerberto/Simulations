@@ -39,11 +39,13 @@ int main (int argc, char *argv[]) {
 }
 
 double func (double x) {
-	return T*sinh(x) + V*exp(-2.0*x)/(1.0 - exp(-2.0*x))/(1.0 - exp(-2.0*x));
+	return -T*(sinh(x)*sinh(x) + cosh(x)*cosh(x))*(exp(x)-1.0) + \
+		T*cosh(x)*sinh(x)*exp(x) + 2.0*V*(cosh(x)+sinh(x))*exp(x) - \
+		4.0*V*sinh(x)*exp(2.0*x)/(exp(x)-1.0) ;
 }
 
 double envar (double x) {
-	return -2*T*cosh(x) + V/(1.0 - exp(-2.0*x));
+	return -T*4.0*cosh(x)*sinh(x)/(exp(x)-1.0) + 2*V*sinh(x)*exp(x)/(exp(x)-1.0)/(exp(x)-1.0);
 }
 
 

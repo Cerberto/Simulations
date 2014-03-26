@@ -5,7 +5,7 @@
 
 $g = 0;
 $gmin	= 0.1;
-$gmax	= 1.0;
+$gmax	= 7.0;
 $N 		= 50;
 $dg		= ($gmax - $gmin)/$N;
 

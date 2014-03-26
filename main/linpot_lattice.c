@@ -33,7 +33,7 @@ double delta;	/* hypercube side */
 double vpar;	/* variational parameter of the trial wave funct */
 double T;		/* hopping amplitude */
 double V;		/* strength of the local potential */
-double L;			/* number of lattice sites */
+double L;		/* number of lattice sites */
 
 double probability (double *x);
 double trialWF (double x);
@@ -46,7 +46,7 @@ int main (int argc, char *argv[]) {
 	int NDAT;	/* size of the data sample */
 	int sw, i, counter;
 	double en_sum, enld_sum, ld_sum, en_wsum, en_varsum, \
-		site, vpar_init, delta_init, Dvpar, acptrate, check;
+		site, vpar_init, Dvpar, acptrate;
 	double *site_p;
 		site_p = &site;
 
@@ -88,7 +88,7 @@ int main (int argc, char *argv[]) {
 	scanf("%d",&NCONV);
 	scanf("%d",&NAV);
 		
-	scanf("%lf",&delta_init);
+	scanf("%lf",&delta);
 	scanf("%lf",&L);
 	scanf("%lf",&site);
 	scanf("%lf",&T);
@@ -108,7 +108,6 @@ int main (int argc, char *argv[]) {
 	vpar = vpar_init;
 	en_wsum = en_varsum = 0;
 	for(counter=-NCONV; counter<NAV; counter++) {
-		delta = 3.0/vpar;
 
 		/* Process is left free for a certain number NTH of sweeps:
 	 	* no data are used for estimating the integral
@@ -119,7 +118,7 @@ int main (int argc, char *argv[]) {
 			site = *site_p;
 			fprintf(therm_file, "%d\t%3.1lf\n", sw, site);
 		}
-		printf("Acceptance rate in thermalization : %lf\n", acptrate);
+		// printf("Acceptance rate in thermalization : %lf\n", acptrate);
 		
 		/* From now on data are collected and used for the estimation */
 		i=0;
@@ -130,7 +129,7 @@ int main (int argc, char *argv[]) {
 			site = *site_p;
 
 			/* Print site to see the distribution */
-			if (vpar == vpar_init) {
+			if (counter == 0) {
 				fprintf(distrib_file, "%3.1lf\n", site);
 				/* store the value of 'site' to compute the autocorrelation */
 				autocorr[sw] = site;
@@ -149,7 +148,7 @@ int main (int argc, char *argv[]) {
 				i++;
 			}
 		}
-		printf("Acceptance rate when thermalized  : %lf\n", acptrate);
+		// printf("Acceptance rate when thermalized  : %lf\n", acptrate);
 
 		/* Average and variance calculated with the jackknife re-sampling */
 		JKcluster(&enld);	/* covariance energy-logarithmic derivative */
@@ -158,26 +157,13 @@ int main (int argc, char *argv[]) {
 
 		/* Average and variance of the variational energy derivative */
 		ender = energy_derivative (&enld, &en, &ld);
+		printf("vpar = %lf,\tenergy mean / derivative = %lf / %.5e\n", \
+			vpar, en.Mean, ender.Mean);
 
 		/* Print mean and variance of energy and its derivative on file */
 		if (counter < 0)
 			fprintf(integral_file, "%lf\t%.10e\t%.10e\t%.10e\t%.10e\n", \
 				vpar, en.Mean, sqrt(en.Var), ender.Mean, sqrt(ender.Var));
-
-	/***************************************************************************
-	 * CHECK IF 'energy_derivative' WORKS
-	 */
-		for (i=0; i<NDAT; i++) {
-			enld_sum += enld.Vec[i]/NDAT;
-			en_sum   += en.Vec[i]/NDAT;
-			ld_sum   += ld.Vec[i]/NDAT;
-		}
-		// check = ender.Mean - 2.0*correlation(en.Vec, ld.Vec, NDAT);
-		check = ender.Mean - 2.0*(enld_sum - en_sum*ld_sum);
-		printf("check = %lf,\tenergy derivative = %lf\n", check, ender.Mean);
-		enld_sum = en_sum = ld_sum = 0;
-	/***************************************************************************/
-
 
 		/* New variational parameter calculated via Steepest Descent */
 		fprintf(vpar_file, "%d\t%.10e\t%.10e\n", counter, vpar, ender.Mean);
