@@ -159,7 +159,7 @@ do while (press <= 1.3)
  19 format('lj_output/P_en-cv-vol_',f5.3)
     output_filename = trim(output_filename)
     output_channel  = 21 + j
-    open(unit=output_channel, file =output_filename, access='append', &
+    open(unit=output_channel, file=output_filename, access='append', &
         action='write')
     write (output_channel,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
                                     cv%mean/N, sqrt(cv%var)/N, &

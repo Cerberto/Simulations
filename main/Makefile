@@ -38,7 +38,7 @@ MODULES =  $(RANDOM) $(SIMULATIONS) $(CLUSTER) $(START) $(EXTRAS)
 
 #############################  Fortran programs  ###############################
 
-FMAIN = lennard-jones-V  lennard-jones-P
+FMAIN = lennard-jones-V  lennard-jones-P_2
 
 FGLOBAL = kind  constants
 
