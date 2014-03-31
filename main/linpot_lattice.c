@@ -166,7 +166,7 @@ int main (int argc, char *argv[]) {
 				vpar, en.Mean, sqrt(en.Var), ender.Mean, sqrt(ender.Var));
 
 		/* New variational parameter calculated via Steepest Descent */
-		fprintf(vpar_file, "%d\t%.10e\t%.10e\n", counter, vpar, ender.Mean);
+		fprintf(vpar_file, "%d\t%.10e\n", counter, vpar);
 
 		/* Average over several iterations
 		 * when (assuming to have) converged to the minimum */

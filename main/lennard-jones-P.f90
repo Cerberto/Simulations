@@ -26,8 +26,11 @@ program LJ
     type(JK) :: p_en, cv, vol
     real(dp), dimension(:), allocatable :: p_en_array, vol_array
     
-    real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress, pressinit
-    integer :: sw, tmax, i, counter
+    real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress, &
+                pressinit
+    integer :: sw, tmax, i, j, counter
+    character (len=100) :: output_filename
+    integer :: output_channel
     
     open (unit=8, file='lj_output/P_particle_init.dat', status='replace', &
         action='write')
@@ -35,8 +38,7 @@ program LJ
         action='write')
     open (unit=10, file='lj_output/P_potential.dat', status='replace', &
         action='write')
-    open(unit=12, file='lj_output/P_X_vs_p.dat', status='replace', action='write')
-    !open(unit=12, file='lj_output/P_X_vs_p.dat', access='append', action='write')
+    !open(unit=12, file='lj_output/P_X_vs_p.dat', status='replace', action='write')
     
     call rlxdinit(1,rand(time()))
     
@@ -71,11 +73,13 @@ program LJ
     call JK_init (vol,ndat)
     
 ! DO LOOP ON PRESSURE
-press = pressinit
 side    = (N/rho)**(1/3.0)
 rcutoff = side/2.d0
+press   = pressinit
+j=0
 do while (press <= 1.3)
     
+    press = pressinit + real(j,dp)*deltapress
     delta = deltainit
     call particle_init(ptcls)
     
@@ -121,6 +125,7 @@ do while (press <= 1.3)
         end if
     end do
     write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
+
     
     !
     ! Compute mean and variance (of the mean) of potential energy and volume
@@ -146,11 +151,27 @@ do while (press <= 1.3)
     write (6,*) '<side> - rcutoff        :', (vol%mean)**(1.d0/3) - rcutoff
     write (6,*) ' '
     
-    write (12,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
-                        cv%mean/N, sqrt(cv%var)/N, &
-                        vol%mean, sqrt(vol%var)
+    !
+    ! Open (in append mode) a file for each value of the pressure where saving
+    ! the average quantities
+    !
+    write(output_filename,19) press
+ 19 format('lj_output/P_en-cv-vol_',f5.3)
+    output_filename = trim(output_filename)
+    output_channel  = 21 + j
+    open(unit=output_channel, file =output_filename, access='append', &
+        action='write')
+    write (output_channel,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
+                                    cv%mean/N, sqrt(cv%var)/N, &
+                                    vol%mean, sqrt(vol%var)
     
-    press = press + deltapress
+    !write (6,*) 'output_filename = ', output_filename
+    !write (6,*) 'output_channel  = ', output_channel
+    
+    !call flush (output_channel)
+    !close (output_channel)
+    
+    j = j+1
     call flush (6)
     call flush (12)
 end do
