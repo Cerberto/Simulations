@@ -11,5 +11,5 @@
 1.0     # sigma
 0.5     # beta
 0.2     # pressure
+0.05    # delta pressure
 0.05    # deltaL / L max
-0.05     # delta pressure

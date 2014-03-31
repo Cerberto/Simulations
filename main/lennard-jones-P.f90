@@ -92,9 +92,6 @@ do while (press <= 1.3)
     acpt_rate = 0
     do sw=1, nth
         acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nth
-        !if (mod(sw,10)==0) then
-        !    write (10,*) sw, poten
-        !end if
     end do
     write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
     
@@ -116,7 +113,6 @@ do while (press <= 1.3)
         sum_cv = sum_cv + poten**2/nbin
         sum_vol = sum_vol + side**3/nbin
         if (mod(sw,nbin) == 0) then
-        !    write (10,*) (sw+nth)/nbin, poten
             p_en%vec(counter) = sum_p_en
             sum_p_en = 0
             vol%vec(counter) = sum_vol
