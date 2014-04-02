@@ -9,5 +9,5 @@
 0.2     # delta
 1.0     # eps
 1.0     # sigma
-5.1     # tempinit
-0.1    # deltatemp
+1.0     # tempinit
+0.25    # deltatemp

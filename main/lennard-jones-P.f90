@@ -27,7 +27,7 @@ program LJ
     real(dp), dimension(:), allocatable :: p_en_array, vol_array
     
     real(dp) :: sum_p_en, sum_cv, sum_vol, acpt_rate, deltainit, deltapress, &
-                pressinit
+                pressinit, ratio_pressdelta
     integer :: sw, tmax, i, j, counter
     character (len=100) :: output_filename
     integer :: output_channel
@@ -38,7 +38,6 @@ program LJ
         action='write')
     open (unit=10, file='lj_output/P_potential.dat', status='replace', &
         action='write')
-    !open(unit=12, file='lj_output/P_X_vs_p.dat', status='replace', action='write')
     
     call rlxdinit(1,rand(time()))
     
@@ -72,115 +71,135 @@ program LJ
     call JK_init (cv,ndat)
     call JK_init (vol,ndat)
     
-! DO LOOP ON PRESSURE
-side    = (N/rho)**(1/3.0)
-rcutoff = side/2.d0
-press   = pressinit
-j=0
-do while (press <= 1.3)
-    
-    press = pressinit + real(j,dp)*deltapress
-    delta = deltainit
-    call particle_init(ptcls)
-    
+    ! 
+    !   Do loop on pressure
     !
-    !   Print position of particles right after initialization
-    !
-    do i=1, N
-        write (8,*), ptcls(i)%pstn
-    end do
-    
-    !
-    !   Thermalization
-    !
-    acpt_rate = 0
-    do sw=1, nth
-        acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nth
-    end do
-    write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
-    
-    !
-    !   Print position of particles assumed thermalized
-    !
-    do i=1, N, 1
-        write (9,*), ptcls(i)%pstn
-    end do
-    
-    counter = 1
-    acpt_rate = 0
-    sum_p_en = 0
-    sum_vol = 0
-    do sw=1, nsw
-        acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nsw
+    side    = (N/rho)**(1/3.0)
+    rcutoff = side/2.d0
+    press   = pressinit
+    delta   = deltainit
+    ratio_pressdelta = deltainit/pressinit
+    j=0
+    do while (press <= 0.51)
         
-        sum_p_en = sum_p_en + poten/nbin
-        sum_cv = sum_cv + poten**2/nbin
-        sum_vol = sum_vol + side**3/nbin
-        if (mod(sw,nbin) == 0) then
-            p_en%vec(counter) = sum_p_en
-            sum_p_en = 0
-            vol%vec(counter) = sum_vol
-            sum_vol = 0
-            counter = counter + 1
-        end if
+        press = pressinit + real(j,dp)*deltapress
+        delta = deltainit*(press/pressinit)**(0.33333)
+        call particle_init(ptcls)
+        
+        !
+        !   Print position of particles right after initialization
+        !
+        do i=1, N
+            write (8,*), ptcls(i)%pstn
+        end do
+        
+        !
+        !   Open file where saving the potential as a function of the markovian
+        !   time
+        !
+        write(output_filename,18) press
+18      format('lj_output/P_potential_',f5.3)
+        output_filename = trim(output_filename)
+        output_channel  = 21 + 2*j
+        open (unit=output_channel, file=output_filename, &
+            status='replace', action='write')
+        
+        !
+        !   Thermalization
+        !
+        acpt_rate = 0
+        do sw=1, nth
+            acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nth
+            write (output_channel,*) sw, poten
+        end do
+        write (6,*) 'Acceptance rate (in thermalization) :', acpt_rate
+        
+        !
+        !   Print position of particles assumed thermalized
+        !
+        do i=1, N, 1
+            write (9,*), ptcls(i)%pstn
+        end do
+        
+        counter   = 1
+        acpt_rate = 0
+        sum_p_en  = 0
+        sum_cv    = 0
+        sum_vol   = 0
+        do sw=1, nsw
+            acpt_rate = acpt_rate + thmetropolis_p_alt(ptcls)/nsw
+            write (output_channel,*) sw+nth, poten
+            
+            sum_p_en = sum_p_en + poten/nbin
+            sum_cv   = sum_cv + poten**2/nbin
+            sum_vol  = sum_vol + side**3/nbin
+            if (mod(sw,nbin) == 0) then
+                p_en%vec(counter) = sum_p_en
+                sum_p_en = 0
+                cv%vec(counter) = beta*beta*(sum_cv - sum_p_en*sum_p_en)
+                sum_cv = 0
+                vol%vec(counter) = sum_vol
+                sum_vol = 0
+                counter = counter + 1
+            end if
+        end do
+        write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
+    
+        call flush (output_channel)
+        close (output_channel)
+        
+        !
+        ! Compute mean and variance (of the mean) of potential energy and volume
+        !
+        call JK_cluster (p_en)
+        call JK_cluster (cv)
+        call JK_cluster (vol)
+        
+        !
+        ! Compute mean and variance (of the mean) of the specific heat
+        !   
+    !    do counter=1, ndat
+    !        cv%vec(counter) = (beta**2)*(p_en%vec(counter) - p_en%mean)**2
+    !    end do
+    !    call JK_cluster (cv)
+        
+        write (6,*) 'Number of particles     :', N
+        write (6,*) 'Pressure                :', press
+        write (6,*) 'Temperature             :', 1.d0/beta
+        write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
+        write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
+        write (6,*) 'Volume                  :', vol%mean, '+-', sqrt(vol%var)
+        write (6,*) '<side>/2 - rcutoff      :', ((vol%mean)**(1.d0/3))/2 - rcutoff
+        write (6,*) '<side> - rcutoff        :', (vol%mean)**(1.d0/3) - rcutoff
+        write (6,*) ' '
+        
+        
+        !
+        ! Open (in append mode) a file for each value of the pressure where saving
+        ! the average quantities
+        !
+        write(output_filename,19) press
+19      format('lj_output/P_cv_',f5.3)
+        output_filename = trim(output_filename)
+        output_channel  = 21 + 2*j + 1
+        open(unit=output_channel, file=output_filename, access='append', &
+            action='write')
+        !write (output_channel,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
+        !                                cv%mean/N, sqrt(cv%var)/N, &
+        !                                vol%mean, sqrt(vol%var)
+        write (output_channel,*) press, cv%mean/N, sqrt(cv%var)/N
+        
+        call flush (output_channel)
+        close (output_channel)
+        
+        j = j+1
+        call flush (6)
     end do
-    write (6,*) 'Acceptance rate (when thermalized) :', acpt_rate
-
-    
-    !
-    ! Compute mean and variance (of the mean) of potential energy and volume
-    !
-    call JK_cluster (p_en)
-    call JK_cluster (vol)
-    
-    !
-    ! Compute mean and variance (of the mean) of the specific heat
-    !   
-    do counter=1, ndat
-        cv%vec(counter) = (beta**2)*(p_en%vec(counter) - p_en%mean)**2
-    end do
-    call JK_cluster (cv)
-    
-    write (6,*) 'Number of particles     :', N
-    write (6,*) 'Pressure                :', press
-    write (6,*) 'Temperature             :', 1.d0/beta
-    write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
-    write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
-    write (6,*) 'Volume                  :', vol%mean, '+-', sqrt(vol%var)
-    write (6,*) '<side>/2 - rcutoff      :', ((vol%mean)**(1.d0/3))/2 - rcutoff
-    write (6,*) '<side> - rcutoff        :', (vol%mean)**(1.d0/3) - rcutoff
-    write (6,*) ' '
-    
-    !
-    ! Open (in append mode) a file for each value of the pressure where saving
-    ! the average quantities
-    !
-    write(output_filename,19) press
- 19 format('lj_output/P_en-cv-vol_',f5.3)
-    output_filename = trim(output_filename)
-    output_channel  = 21 + j
-    open(unit=output_channel, file=output_filename, access='append', &
-        action='write')
-    write (output_channel,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
-                                    cv%mean/N, sqrt(cv%var)/N, &
-                                    vol%mean, sqrt(vol%var)
-    
-    !write (6,*) 'output_filename = ', output_filename
-    !write (6,*) 'output_channel  = ', output_channel
-    
-    !call flush (output_channel)
-    !close (output_channel)
-    
-    j = j+1
-    call flush (6)
-    call flush (12)
-end do
-    
+        
     close (8)
     close (9)
     close (10)
-    close (12)
-    
+        
 end program LJ
 
 !

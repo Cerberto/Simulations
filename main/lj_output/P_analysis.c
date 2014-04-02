@@ -12,11 +12,12 @@ int main (int argc, char *argv[]) {
 	double en_err, cv_err, vol_err;
 	int counter, lines, ifile;
 
-	char *output_filename, *input_filename;
-		output_filename = malloc(100*sizeof(char));
+	char *input_filename;
 		input_filename  = malloc(100*sizeof(char));
 	FILE *input, *output;
-		output = fopen(output_filename, "a");
+		output = fopen("P_many-sims", "a");
+
+	lines = atoi(argv[1]);
 
 	for(ifile=2; ifile<argc; ifile++) {
 
@@ -31,13 +32,13 @@ int main (int argc, char *argv[]) {
 		vol = 0;
 		counter = 0;
 		while(counter < lines) {
-			fscanf("%lf",&press);
-			fscanf("%lf",&en1);
-			fscanf("%lf",&spare);
-			fscanf("%lf",&cv1);
-			fscanf("%lf",&spare);
-			fscanf("%lf",&vol1);
-			fscanf("%lf",&spare);
+			fscanf(input,"%lf",&press);
+			fscanf(input,"%lf",&en1);
+			fscanf(input,"%lf",&spare);
+			fscanf(input,"%lf",&cv1);
+			fscanf(input,"%lf",&spare);
+			fscanf(input,"%lf",&vol1);
+			fscanf(input,"%lf",&spare);
 
 			en  += en1;
 			cv  += cv1;

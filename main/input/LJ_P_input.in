@@ -6,7 +6,7 @@
 50      # tmax
 
 0.5     # rho  
-0.4     # delta
+0.5     # delta
 1.0     # eps
 1.0     # sigma
 0.5     # beta

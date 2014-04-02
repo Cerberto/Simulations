@@ -24,7 +24,6 @@ program LJ
     
     
     type(JK) :: p_en, cv
-    real(dp), dimension(:), allocatable :: p_en_array, cv_array
 
     real(dp) :: sum_p_en, sum_cv, acpt_rate, temperature, tempinit, deltatemp
     integer :: sw, tmax, i, counter
@@ -65,8 +64,6 @@ program LJ
     read *, deltatemp
     
     allocate(ptcls(N))
-    allocate(p_en_array(ndat))
-    allocate(cv_array(ndat))
     call JK_init (p_en,ndat)
     call JK_init (cv,ndat)
     
@@ -123,9 +120,9 @@ do while (temperature <= 8.d0)
         sum_cv = sum_cv + poten**2/nbin
         if (mod(sw,nbin) == 0) then
         !    write (10,*) (sw+nth)/nbin, poten
-            p_en_array(counter) = sum_p_en
+            p_en%vec(counter) = sum_p_en
             sum_p_en = 0
-            cv_array(counter) = sum_cv
+            cv%vec(counter) = beta*beta*(sum_cv - sum_p_en*sum_p_en)
             sum_cv = 0
             counter = counter + 1
         end if
@@ -135,17 +132,16 @@ do while (temperature <= 8.d0)
     !
     ! Compute mean and variance (of the mean) of potential energy
     !
-    p_en%vec = p_en_array
     call JK_cluster (p_en)
+    call JK_cluster (cv)
     
     !
     ! Compute mean and variance (of the mean) of the specific heat
     !
-    do counter=1, ndat
-        cv_array(counter) = (beta**2)*(cv_array(counter) - p_en%mean**2)
-    end do
-    cv%vec = cv_array
-    call JK_cluster (cv)
+!    do counter=1, ndat
+!        cv%vec(counter) = (beta**2)*(cv%vec(counter) - p_en%mean**2)
+!    end do
+!    call JK_cluster (cv)
     
     write (6,*) 'Energy / particle       :', p_en%mean/N, '+-', sqrt(p_en%var)/N
     write (6,*) 'Specific heat / particle:', cv%mean/N, '+-', sqrt(cv%var)/N
@@ -164,6 +160,7 @@ end do
     close (12)
 
 end program LJ
+
 
 !
 ! Super efficient debugging
