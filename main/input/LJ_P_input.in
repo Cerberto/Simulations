@@ -1,6 +1,6 @@
 100     # N
 
-3000    # nth
+10000   # nth
 100000  # nsw
 200     # skip / nbin
 50      # tmax

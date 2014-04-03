@@ -32,13 +32,13 @@ program LJ
     character (len=100) :: output_filename
     integer :: output_channel
     
-    open (unit=8, file='lj_output/P_particle_init.dat', status='replace', &
-        action='write')
-    open (unit=9, file='lj_output/P_particle_therm.dat', status='replace', &
-        action='write')
-    open (unit=10, file='lj_output/P_potential.dat', status='replace', &
-        action='write')
-    
+!    open (unit=8, file='lj_output/P_particle_init.dat', status='replace', &
+!        action='write')
+!    open (unit=9, file='lj_output/P_particle_therm.dat', status='replace', &
+!        action='write')
+!    open (unit=10, file='lj_output/P_potential.dat', status='replace', &
+!        action='write')
+
     call rlxdinit(1,rand(time()))
     
     read *, N
@@ -59,10 +59,10 @@ program LJ
     read *, dv
     read *, deltapress
     
-    write (10,*) '# Potential during thermalization process '
-    write (10,*) '# p     =', press
-    write (10,*) '# delta =', deltainit
-    write (10,*) '# dv    =', dv
+!    write (10,*) '# Potential during thermalization process '
+!    write (10,*) '# p     =', press
+!    write (10,*) '# delta =', deltainit
+!    write (10,*) '# dv    =', dv
     
     allocate(ptcls(N))
     allocate(p_en_array(ndat))
@@ -80,9 +80,8 @@ program LJ
     delta   = deltainit
     ratio_pressdelta = deltainit/pressinit
     j=0
-    do while (press <= 0.51)
-        
-        press = pressinit + real(j,dp)*deltapress
+    do while (press < 0.51)
+
         delta = deltainit*(press/pressinit)**(0.33333)
         call particle_init(ptcls)
         
@@ -149,19 +148,11 @@ program LJ
         close (output_channel)
         
         !
-        ! Compute mean and variance (of the mean) of potential energy and volume
+        ! Compute mean and variance (of the mean) of energy, specific heat and volume
         !
         call JK_cluster (p_en)
         call JK_cluster (cv)
         call JK_cluster (vol)
-        
-        !
-        ! Compute mean and variance (of the mean) of the specific heat
-        !   
-    !    do counter=1, ndat
-    !        cv%vec(counter) = (beta**2)*(p_en%vec(counter) - p_en%mean)**2
-    !    end do
-    !    call JK_cluster (cv)
         
         write (6,*) 'Number of particles     :', N
         write (6,*) 'Pressure                :', press
@@ -179,20 +170,20 @@ program LJ
         ! the average quantities
         !
         write(output_filename,19) press
-19      format('lj_output/P_cv_',f5.3)
+19      format('lj_output/P_en-cv-vol_',f5.3)
         output_filename = trim(output_filename)
         output_channel  = 21 + 2*j + 1
         open(unit=output_channel, file=output_filename, access='append', &
             action='write')
-        !write (output_channel,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
-        !                                cv%mean/N, sqrt(cv%var)/N, &
-        !                                vol%mean, sqrt(vol%var)
-        write (output_channel,*) press, cv%mean/N, sqrt(cv%var)/N
+        write (output_channel,*) press, p_en%mean/N, sqrt(p_en%var)/N, &
+                                        cv%mean/N, sqrt(cv%var)/N, &
+                                        vol%mean, sqrt(vol%var)
         
         call flush (output_channel)
         close (output_channel)
         
         j = j+1
+        press = pressinit + real(j,dp)*deltapress
         call flush (6)
     end do
         

@@ -16,6 +16,7 @@ int main (int argc, char *argv[]) {
 		input_filename  = malloc(100*sizeof(char));
 	FILE *input, *output;
 		output = fopen("P_many-sims", "a");
+		// output = fopen("P_many_cv", "a");
 
 	lines = atoi(argv[1]);
 
@@ -26,14 +27,14 @@ int main (int argc, char *argv[]) {
 
 		/*
 	 	*	Read the input file and compute the averages to write on output
-		**/
+		*/
 		en  = 0;
 		cv  = 0;
 		vol = 0;
 		counter = 0;
 		while(counter < lines) {
 			fscanf(input,"%lf",&press);
-			fscanf(input,"%lf",&en1);
+			fscanf(input,"%lf",&en1); 
 			fscanf(input,"%lf",&spare);
 			fscanf(input,"%lf",&cv1);
 			fscanf(input,"%lf",&spare);
@@ -41,35 +42,41 @@ int main (int argc, char *argv[]) {
 			fscanf(input,"%lf",&spare);
 
 			en  += en1;
-			cv  += cv1;
-			vol += vol1;
 			en_err  += en1*en1;
-			cv_err  += cv1*cv1;
+
+			vol += vol1;
 			vol_err += vol1*vol1;
+
+			cv  += cv1;
+			cv_err  += cv1*cv1;
+
 			counter++;
 		}
 
 		en  /= (double)lines;
-		cv  /= (double)lines;
-		vol /= (double)lines;
 		en_err  /= (double)lines;
-		cv_err  /= (double)lines;
-		vol_err /= (double)lines;
 		en_err  += -en*en;
-		cv_err	+= -cv*cv;
-		vol_err += -vol*vol;
 		en_err  /= (double)(lines - 1);
-		cv_err  /= (double)(lines - 1);
-		vol_err /= (double)(lines - 1);
-
 		en_err  = sqrt(en_err);
+
+		cv  /= (double)lines;
+		cv_err  /= (double)lines;
+		cv_err	+= -cv*cv;
+		cv_err  /= (double)(lines - 1);
 		cv_err  = sqrt(cv_err);
+
+		vol /= (double)lines;
+		vol_err /= (double)lines;
+		vol_err += -vol*vol;
+		vol_err /= (double)(lines - 1);
 		vol_err = sqrt(vol_err);
+
 
 		/* ********************* */
 
 		fprintf(output, "%.3lf\t%.7e\t%.7e\t%.7e\t%.7e\t%.7e\t%.7e\n", \
 			press, en, en_err, cv, cv_err, vol, vol_err);
+		/* fprintf(output, "%.3lf\t%.7e\t%.7e\n", press, cv, cv_err); */
 
 		fclose(input);
 	}
