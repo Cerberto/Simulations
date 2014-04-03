@@ -20,7 +20,7 @@ SHELL=/bin/bash
 
 #################################  C programs  #################################
 
-MAIN = linpot_lattice  linpot_lattice_bf  varmin
+MAIN = linpot_lattice  linpot_lattice_bf
 
 
 RANDOM = ranlxs  ranlxd  gauss  ranluxf
@@ -38,7 +38,7 @@ MODULES =  $(RANDOM) $(SIMULATIONS) $(CLUSTER) $(START) $(EXTRAS)
 
 #############################  Fortran programs  ###############################
 
-FMAIN = lennard-jones-V  lennard-jones-P
+FMAIN = lennard-jones-V  lennard-jones-P  lennard-jones-P_2
 
 FGLOBAL = kind  constants
 
